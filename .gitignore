@@ -1,0 +1,26 @@
+# Build logs
+build.log
+
+# macOS
+.DS_Store
+
+# TLDR cache
+.tldr/
+.tldrignore
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Environment
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+
+# Misc
+*.log
+PLAN.md

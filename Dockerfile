@@ -81,10 +81,10 @@ RUN mkdir -p /comfyui/models/text_encoders && \
     wget -q -O /comfyui/models/text_encoders/clip_l.safetensors \
     "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors"
 
-# 6.3 VAE
+# 6.3 VAE (public mirror — same ae.safetensors, not gated)
 RUN mkdir -p /comfyui/models/vae && \
     wget -q -O /comfyui/models/vae/flux-ae.safetensors \
-    "https://huggingface.co/black-forest-labs/FLUX.1-dev/resolve/main/ae.safetensors"
+    "https://huggingface.co/ffxvs/vae-flux/resolve/main/ae.safetensors"
 
 # 6.4 XLabs IP-Adapter v2 (~1GB) — face reference guidance
 RUN mkdir -p /comfyui/models/xlabs/ipadapters && \
@@ -110,24 +110,24 @@ RUN mkdir -p /comfyui/models/upscale_models && \
     wget -q -O /comfyui/models/upscale_models/4x-UltraSharp.pth \
     "https://huggingface.co/lokCX/4x-Ultrasharp/resolve/main/4x-UltraSharp.pth"
 
-# 6.8 XLabs ControlNet OpenPose (~700MB)
+# 6.8 XLabs ControlNet OpenPose (~2.8GB) — trained for XLabs pipeline (raulc0399)
 RUN mkdir -p /comfyui/models/xlabs/controlnets && \
     wget -q -O /comfyui/models/xlabs/controlnets/flux-openpose-controlnet.safetensors \
-    "https://huggingface.co/XLabs-AI/flux-controlnet-collections/resolve/main/flux-openpose-controlnet.safetensors"
+    "https://huggingface.co/raulc0399/flux_dev_openpose_controlnet/resolve/main/model.safetensors"
 
 # 6.9 Flux Realism LoRA (~300MB)
 RUN mkdir -p /comfyui/models/loras && \
     wget -q -O /comfyui/models/loras/flux_realism_lora.safetensors \
     "https://huggingface.co/comfyanonymous/flux_RealismLora_converted_comfyui/resolve/main/flux_realism_lora.safetensors"
 
-# Stage 7: Handler + startup files
+# Stage 7: Cleanup (before COPY to keep cache valid)
+RUN apt-get purge -y build-essential python3.12-dev && \
+    apt-get autoremove -y && apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /root/.cache/pip
+
+# Stage 8: Handler + startup files
 WORKDIR /
 COPY src/start.sh src/handler.py src/extra_model_paths.yaml ./
 RUN chmod +x /start.sh
 
 CMD ["/start.sh"]
-
-# Stage 8: Cleanup
-RUN apt-get purge -y build-essential python3.12-dev && \
-    apt-get autoremove -y && apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /root/.cache/pip
