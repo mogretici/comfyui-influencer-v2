@@ -1,0 +1,543 @@
+{
+  "common": {
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "delete": "Sil",
+    "download": "İndir",
+    "loading": "Yükleniyor...",
+    "copy": "Kopyala",
+    "copied": "Kopyalandı!",
+    "search": "Ara...",
+    "close": "Kapat",
+    "reset": "Sıfırla",
+    "configure": "Yapılandır",
+    "connect": "Bağlan",
+    "disconnect": "Bağlantıyı Kes",
+    "viewAll": "Tümünü Gör",
+    "selectAll": "Tümünü Seç",
+    "deselectAll": "Seçimi Kaldır",
+    "selected": "{count} seçili",
+    "noResults": "Sonuç bulunamadı",
+    "retry": "Tekrar Dene",
+    "pause": "Duraklat",
+    "generate": "Oluştur",
+    "edit": "Düzenle",
+    "add": "Ekle",
+    "create": "Oluştur",
+    "back": "Geri",
+    "next": "İleri",
+    "today": "Bugün",
+    "clear": "Temizle"
+  },
+  "nav": {
+    "create": "Oluştur",
+    "library": "Kütüphane",
+    "character": "Karakter",
+    "insights": "İstatistikler",
+    "system": "Sistem",
+    "dashboard": "Kontrol Paneli",
+    "generateItem": "Oluştur",
+    "batch": "Toplu Üretim",
+    "editor": "Düzenleyici",
+    "promptBuilder": "Prompt Oluşturucu",
+    "gallery": "Galeri",
+    "collections": "Koleksiyonlar",
+    "calendar": "Takvim",
+    "profile": "Profil",
+    "social": "Sosyal Medya",
+    "analytics": "Analitik",
+    "queue": "Kuyruk",
+    "settings": "Ayarlar",
+    "setup": "Kurulum",
+    "imagesGenerated": "Oluşturulan Görseller",
+    "pipelineInfo": "Flux 2 Dev + Face LoRA"
+  },
+  "header": {
+    "studio": "Studio",
+    "generating": "Oluşturuluyor...",
+    "connected": "Bağlı",
+    "notConfigured": "Yapılandırılmamış",
+    "pageTitles": {
+      "/": "Kontrol Paneli",
+      "/generate": "Yaratıcı Stüdyo",
+      "/batch": "Toplu Üretim",
+      "/editor": "Düzenleme Stüdyosu",
+      "/prompt-builder": "Prompt Oluşturucu",
+      "/gallery": "Görsel Kütüphanesi",
+      "/collections": "Koleksiyonlar",
+      "/calendar": "İçerik Takvimi",
+      "/character": "Karakter Profili",
+      "/social": "Sosyal Medya",
+      "/analytics": "Analitik",
+      "/queue": "Kuyruk",
+      "/settings": "Ayarlar"
+    }
+  },
+  "dashboard": {
+    "heading": "Komuta Merkezi",
+    "subtitle": "AI yaratıcı boru hattınız bir bakışta",
+    "setupRequired": "Kurulum Gerekli",
+    "setupDescription": "Başlamak için RunPod API anahtarınızı ve endpoint ID'nizi ekleyin.",
+    "totalImages": "Toplam Görsel",
+    "today": "Bugün",
+    "favorites": "Favoriler",
+    "recentCreations": "Son Oluşturulanlar",
+    "quickActions": "Hızlı İşlemler",
+    "pipelineStack": "Pipeline Bileşenleri",
+    "actions": {
+      "generate": {
+        "title": "Oluştur",
+        "description": "Metin prompt'larıyla sahne ön ayarları kullanarak oluşturun"
+      },
+      "editor": {
+        "title": "Düzenleyici",
+        "description": "Sahneleri, kıyafetleri düzenleyin, yüzleri iyileştirin"
+      },
+      "gallery": {
+        "title": "Galeri",
+        "description": "Oluşturulan görselleri inceleyin ve yönetin"
+      },
+      "batch": {
+        "title": "Toplu Üretim",
+        "description": "Aynı anda birden fazla varyasyon oluşturun"
+      },
+      "promptBuilder": {
+        "title": "Prompt Oluşturucu",
+        "description": "Değişkenlerle şablonlar oluşturun"
+      },
+      "calendar": {
+        "title": "Takvim",
+        "description": "İçerik programınızı planlayın"
+      }
+    }
+  },
+  "generate": {
+    "heading": "Yaratıcı Stüdyo",
+    "subtitle": "Sahne seçin, prompt yazın, oluşturun",
+    "scenePresets": "Sahne Ön Ayarları",
+    "prompt": "Prompt",
+    "promptPlaceholder": "Sahnenizi detaylıca tanımlayın...",
+    "qualityLabel": "Kalite Seviyesi",
+    "generateButton": "Oluştur",
+    "generating": "Oluşturuluyor...",
+    "advancedSettings": "Gelişmiş Ayarlar",
+    "faceLoraFile": "Face LoRA Dosyası",
+    "negativePrompt": "Negatif Prompt",
+    "negativePromptPlaceholder": "İstemediğiniz öğeler...",
+    "seed": "Seed",
+    "seedRandom": "Rastgele",
+    "preview": "Ön İzleme",
+    "downloadResult": "Sonucu İndir",
+    "reGenerate": "Yeniden Oluştur",
+    "usedSeed": "Kullanılan Seed",
+    "result": "Sonuç",
+    "noResult": "Görsel burada görünecek",
+    "recommended": "Önerilen",
+    "outOfRange": "Önerilen aralık dışında",
+    "advancedWarning": "Bu ayarları değiştirmek kalite profilini geçersiz kılar. Emin değilseniz varsayılan değerleri koruyun.",
+    "identitySection": "Kimlik & Gerçekçilik",
+    "generationSection": "Üretim Parametreleri",
+    "faceLoraHint": "Eğitilmiş yüz modelinizin dosya adı",
+    "widthLabel": "Genişlik (px)",
+    "heightLabel": "Yükseklik (px)",
+    "seedTooltip": "Aynı seed + aynı ayarlar = aynı görsel. -1 her seferinde farklı sonuç üretir.",
+    "lastSeed": "Son: {seed}",
+    "faceEnhanceSection": "Yüz İyileştirme",
+    "negativePromptTooltip": "Görselde istemediğiniz şeyleri yazın. Genelde varsayılanı değiştirmeye gerek yoktur.",
+    "submitting": "İş gönderiliyor...",
+    "successGenerated": "Görsel başarıyla oluşturuldu!",
+    "noImageReturned": "Görsel döndürülmedi",
+    "previewPanel": "Ön İzleme",
+    "previewHint": "Oluşturulan görsel burada görünecek"
+  },
+  "editor": {
+    "heading": "Düzenleme Stüdyosu",
+    "subtitle": "Görselleri düzenleyin ve iyileştirin",
+    "uploadImage": "Görsel Yükle",
+    "uploadHint": "Sürükleyip bırakın veya tıklayarak seçin",
+    "dropHere": "Görseli buraya bırakın",
+    "tabs": {
+      "edit": "Sahne Düzenle",
+      "detailer": "Yüz İyileştir + 4K"
+    },
+    "editPrompt": "Düzenleme Prompt'u",
+    "editPromptPlaceholder": "Yapmak istediğiniz değişikliği anlatın...",
+    "changeAmount": "Değişiklik Miktarı",
+    "applyEdit": "Düzenlemeyi Uygula",
+    "applying": "Uygulanıyor...",
+    "enhance": "İyileştir",
+    "enhancing": "İyileştiriliyor...",
+    "faceDetailerDenoise": "Yüz İyileştirme Gücü",
+    "upscale": "4K Büyütme",
+    "advancedSettings": "Gelişmiş Ayarlar",
+    "editDenoise": "Düzenleme Gücü",
+    "negativePrompt": "Negatif Prompt",
+    "compare": "Karşılaştır",
+    "original": "Orijinal",
+    "result": "Sonuç",
+    "downloadResult": "Sonucu İndir",
+    "noImage": "Sol panelden bir görsel yükleyin",
+    "seed": "Seed",
+    "originalImage": "Orijinal Görsel",
+    "removeImage": "Görseli kaldır",
+    "selectDifferent": "Farklı Görsel Seç",
+    "resultPanel": "Sonuç",
+    "noResult": "Sonuç burada görünecek",
+    "sideBySide": "Yan Yana",
+    "before": "Önce",
+    "after": "Sonra",
+    "changeAmountTooltip": "Orijinal görselden ne kadar uzaklaşılacağını belirler. \"Az\" küçük rötuşlar, \"Çok\" tamamen farklı sahne üretir.",
+    "advancedWarning": "Bu ayarları değiştirmek değişiklik miktarı seçimini geçersiz kılar.",
+    "detailerInfo": "Yüz İyileştirme — Yüz bölgesini yeniden işler ve görseli 4x-UltraSharp ile 4K'ya büyütür. Tek tıkla profesyonel sonuç.",
+    "detailerButton": "Yüzü İyileştir + 4K Büyüt",
+    "processing": "İşleniyor...",
+    "editSuccess": "Görsel düzenlendi!",
+    "detailerSuccess": "Yüz iyileştirildi + 4K'ya büyütüldü!",
+    "fileReadError": "Görsel dosyası okunamadı",
+    "noPromptEdit": "İstediğin değişikliği açıkla",
+    "negativePromptTooltip": "Görselde istemediğiniz şeyleri yazın. Genelde varsayılanı değiştirmeye gerek yoktur."
+  },
+  "batch": {
+    "heading": "Toplu Üretim",
+    "subtitle": "Bir prompt'tan birden fazla varyasyon oluşturun",
+    "prompt": "Prompt",
+    "promptPlaceholder": "Sahnenizi detaylıca tanımlayın...",
+    "variations": "Varyasyon Sayısı",
+    "variationsCount": "{count} varyasyon",
+    "qualityLabel": "Kalite Seviyesi",
+    "startBatch": "Toplu Üretimi Başlat",
+    "generating": "Oluşturuluyor {current}/{total}...",
+    "advancedSettings": "Gelişmiş Ayarlar",
+    "seedStrategy": "Seed Stratejisi",
+    "seedStrategies": {
+      "random": "Rastgele",
+      "sequential": "Sıralı",
+      "fixed": "Sabit"
+    },
+    "baseSeed": "Başlangıç Seed",
+    "baseSeedLabel": "Başlangıç Seed",
+    "negativePrompt": "Negatif Prompt",
+    "negativePromptLabel": "Negatif Prompt",
+    "negativePromptTooltip": "Görselde istemediğiniz şeyleri yazın. Genelde varsayılanı değiştirmeye gerek yoktur.",
+    "results": "Sonuçlar",
+    "seed": "Seed",
+    "promptLabel": "Prompt",
+    "variationsLabel": "Varyasyon Sayısı",
+    "variationsTooltip": "Aynı prompt'tan kaç farklı görsel üretileceğini belirler",
+    "recommended": "Önerilen",
+    "seedStrategyInfo": "Seed stratejisi, varyasyonlar arası çeşitliliği kontrol eder",
+    "seedStrategyLabel": "Seed Stratejisi",
+    "emptyTitle": "Henüz sonuç yok",
+    "emptyDescription": "Toplu üretim başlatmak için prompt girin ve üret butonuna tıklayın.",
+    "variation": "Varyasyon",
+    "downloadAll": "Tümünü İndir"
+  },
+  "gallery": {
+    "heading": "Görsel Kütüphanesi",
+    "subtitle": "Tüm oluşturulan görseller",
+    "filters": {
+      "all": "Tümü",
+      "favorites": "Favoriler",
+      "generate": "Oluşturulan",
+      "edit": "Düzenlenen",
+      "detailer": "İyileştirilen"
+    },
+    "searchPlaceholder": "Prompt'larda ara...",
+    "bulkMode": "Toplu Seç",
+    "bulkDownload": "Seçilenleri İndir",
+    "bulkDelete": "Seçilenleri Sil",
+    "detail": {
+      "prompt": "Prompt",
+      "action": "İşlem",
+      "seed": "Seed",
+      "created": "Oluşturulma",
+      "download": "İndir",
+      "delete": "Sil"
+    },
+    "empty": {
+      "title": "Henüz görsel yok",
+      "description": "İlk görselinizi oluşturmak için Oluştur sayfasına gidin."
+    },
+    "clearAll": "Tümünü Temizle",
+    "imageCount": "{count} görsel"
+  },
+  "settings": {
+    "heading": "Ayarlar",
+    "subtitle": "Stüdyo tercihlerinizi yapılandırın",
+    "appearance": {
+      "title": "Görünüm",
+      "description": "Tema ve dil ayarları",
+      "theme": "Tema",
+      "dark": "Koyu",
+      "light": "Açık",
+      "system": "Sistem",
+      "language": "Dil",
+      "languageTr": "Türkçe",
+      "languageEn": "English"
+    },
+    "connection": {
+      "title": "RunPod Bağlantısı",
+      "description": "API anahtarı ve endpoint ayarları",
+      "apiKey": "API Anahtarı",
+      "apiKeyPlaceholder": "RunPod API anahtarınız...",
+      "endpointId": "Endpoint ID",
+      "endpointIdPlaceholder": "RunPod endpoint ID'niz...",
+      "testConnection": "Bağlantıyı Test Et",
+      "testing": "Test ediliyor...",
+      "connectionOk": "Bağlantı başarılı!",
+      "connectionFailed": "Bağlantı başarısız"
+    },
+    "model": {
+      "title": "Karakter Modeli",
+      "description": "Face LoRA dosya adı",
+      "faceLoraFile": "LoRA Dosyası",
+      "faceLoraPlaceholder": "my_face.safetensors"
+    },
+    "qualityProfile": {
+      "title": "Kalite Profili",
+      "description": "Varsayılan üretim ayarları",
+      "preset": "Önerilen",
+      "advanced": "Gelişmiş Varsayılanlar",
+      "identity": "Kimlik & Gerçekçilik",
+      "generation": "Üretim Parametreleri",
+      "width": "Genişlik (px)",
+      "height": "Yükseklik (px)",
+      "faceEnhance": "Yüz İyileştirme"
+    },
+    "saved": "Ayarlar kaydedildi!"
+  },
+  "analytics": {
+    "heading": "Analitik",
+    "subtitle": "Üretim istatistikleriniz",
+    "totalImages": "Toplam Görsel",
+    "thisWeek": "Bu Hafta",
+    "generated": "Oluşturulan",
+    "avgPerDay": "Günlük Ortalama",
+    "dailyOutput": "Günlük Üretim (Son 14 Gün)",
+    "byAction": "İşlem Türüne Göre",
+    "hourlyActivity": "Saatlik Aktivite",
+    "images": "Görsel",
+    "count": "Adet",
+    "hour": "Saat"
+  },
+  "calendar": {
+    "heading": "İçerik Takvimi",
+    "subtitle": "İçerik programınızı planlayın ve yönetin",
+    "addContent": "İçerik Ekle",
+    "statuses": {
+      "draft": "Taslak",
+      "scheduled": "Planlanmış",
+      "published": "Yayınlanmış"
+    },
+    "noContent": "Bu gün için içerik yok",
+    "weekNav": "Hafta Gezintisi"
+  },
+  "character": {
+    "heading": "Karakter Profili",
+    "subtitle": "AI influencer karakterinizi tanımlayın",
+    "name": "Karakter Adı",
+    "namePlaceholder": "Örn: Elif Studio",
+    "triggerWord": "Tetikleyici Kelime",
+    "triggerWordPlaceholder": "Örn: ohwx woman",
+    "triggerWordHint": "LoRA eğitiminde kullanılan tetikleyici kelime",
+    "bio": "Biyografi",
+    "bioPlaceholder": "Karakterinizi tanımlayın...",
+    "faceLoraFile": "Face LoRA Dosyası",
+    "faceLoraPlaceholder": "my_face.safetensors",
+    "referencePhotos": "Referans Fotoğraflar",
+    "referencePhotosHint": "En fazla 20 fotoğraf (sürükle-bırak veya tıkla)",
+    "profileSaved": "Profil kaydedildi!",
+    "profileReset": "Profil sıfırlandı"
+  },
+  "collections": {
+    "heading": "Koleksiyonlar",
+    "subtitle": "Görselleri düzenli koleksiyonlarda saklayın",
+    "createNew": "Yeni Koleksiyon",
+    "name": "Koleksiyon Adı",
+    "namePlaceholder": "Örn: Instagram Posts",
+    "description": "Açıklama",
+    "descriptionPlaceholder": "Koleksiyonu tanımlayın...",
+    "imageCount": "{count} görsel",
+    "empty": {
+      "title": "Henüz koleksiyon yok",
+      "description": "Görsellerinizi düzenlemek için ilk koleksiyonunuzu oluşturun."
+    }
+  },
+  "social": {
+    "heading": "Sosyal Medya",
+    "subtitle": "İçeriklerinizi sosyal medyada paylaşın",
+    "platforms": "Platformlar",
+    "platformNames": {
+      "instagram": "Instagram",
+      "tiktok": "TikTok",
+      "twitter": "X (Twitter)"
+    },
+    "notConnected": "Bağlı değil",
+    "connected": "Bağlı",
+    "createPost": "Gönderi Oluştur",
+    "caption": "Açıklama",
+    "captionPlaceholder": "Gönderi açıklamanızı yazın...",
+    "captionLimit": "{count}/2200",
+    "hashtags": "Hashtag'ler",
+    "hashtagsPlaceholder": "#aistudio #influencer",
+    "postNow": "Şimdi Paylaş",
+    "schedule": "Zamanla",
+    "postHistory": "Gönderi Geçmişi",
+    "noHistory": "Henüz gönderi yok",
+    "connectRequired": "Paylaşım için bir platform bağlayın"
+  },
+  "promptBuilder": {
+    "heading": "Prompt Oluşturucu",
+    "subtitle": "Değişkenlerle yeniden kullanılabilir şablonlar oluşturun",
+    "template": "Şablon",
+    "templatePlaceholder": "A photo of {trigger} at {location}, wearing {outfit}, {lighting} lighting, {mood} mood, {camera}",
+    "variables": "Değişkenler",
+    "variablePresets": {
+      "location": "Konum",
+      "outfit": "Kıyafet",
+      "lighting": "Işık",
+      "mood": "Ruh Hali",
+      "camera": "Kamera"
+    },
+    "preview": "Ön İzleme",
+    "copyPrompt": "Prompt'u Kopyala",
+    "generateWith": "Bu Prompt ile Oluştur",
+    "savedTemplates": "Kayıtlı Şablonlar",
+    "saveTemplate": "Şablonu Kaydet",
+    "templateName": "Şablon Adı",
+    "templateNamePlaceholder": "Örn: Cafe Pozu",
+    "noTemplates": "Henüz kayıtlı şablon yok"
+  },
+  "queue": {
+    "heading": "Kuyruk",
+    "subtitle": "Üretim kuyruğunuzu yönetin",
+    "statuses": {
+      "pending": "Bekliyor",
+      "running": "Çalışıyor",
+      "completed": "Tamamlandı",
+      "failed": "Başarısız"
+    },
+    "empty": "Kuyrukta iş yok",
+    "jobId": "İş #{id}",
+    "createdAt": "Oluşturulma",
+    "retry": "Tekrar Dene",
+    "removeJob": "Kaldır"
+  },
+  "quality": {
+    "fast": {
+      "name": "Hızlı",
+      "description": "Ön izleme için ideal, 15-20 saniye"
+    },
+    "balanced": {
+      "name": "Dengeli",
+      "description": "Kalite ve hız dengesi, 30-40 saniye"
+    },
+    "maximum": {
+      "name": "Maksimum",
+      "description": "En yüksek kalite, 50-70 saniye"
+    },
+    "hints": {
+      "face_lora_strength": {
+        "label": "Yüz Benzerliği",
+        "description": "Karakterinizin yüzünün ne kadar sadık kalacağını belirler. Yüksek = daha çok benzerlik, ama bazen doğallık azalabilir.",
+        "recommended": "0.85 – 0.95",
+        "warning": "1.0 üstü yüzde bozulmalara neden olabilir"
+      },
+      "realism_lora_strength": {
+        "label": "Gerçekçilik",
+        "description": "Fotoğrafın ne kadar gerçekçi görüneceğini artırır. Çok yüksek yaparsanız aşırı keskin ve yapay durabilir.",
+        "recommended": "0.30 – 0.45"
+      },
+      "ip_adapter_strength": {
+        "label": "Referans Foto Etkisi",
+        "description": "Referans fotoğrafınızın sonuca ne kadar etki edeceğini belirler. Yüksek = daha çok benzerlik ama poz/sahne esnekliği azalır.",
+        "recommended": "0.40 – 0.60"
+      },
+      "steps": {
+        "label": "İşlem Adımları",
+        "description": "Görsel kaç adımda oluşturulacak. Fazla adım = daha detaylı ama daha yavaş. Azı genelde yeterli.",
+        "recommended": "25 – 35"
+      },
+      "cfg": {
+        "label": "Prompt Sadakati",
+        "description": "Yapay zekanın prompt'unuza ne kadar sadık kalacağını belirler. Flux modelleri için düşük değerler (1.0) en iyi sonucu verir.",
+        "recommended": "1.0",
+        "warning": "Flux modelleri 1.0 civarında en iyi çalışır. 2.0+ önerilmez."
+      },
+      "face_detailer_denoise": {
+        "label": "Yüz İyileştirme",
+        "description": "Yüz bölgesinin ne kadar yeniden işleneceğini belirler. Düşük = orijinale yakın, yüksek = daha fazla düzeltme ama farklılık riski.",
+        "recommended": "0.38 – 0.48",
+        "warning": "0.55 üstü yüzü değiştirebilir"
+      },
+      "edit_denoise": {
+        "label": "Değişiklik Miktarı",
+        "description": "Orijinal görselden ne kadar uzaklaşılacağını belirler. Düşük = küçük değişiklikler (renk, ışık), yüksek = büyük değişiklikler (sahne, kıyafet).",
+        "recommended": "0.50 – 0.70"
+      }
+    },
+    "changeAmounts": {
+      "subtle": {
+        "label": "Az",
+        "description": "Işık, renk tonu gibi küçük değişiklikler"
+      },
+      "moderate": {
+        "label": "Orta",
+        "description": "Kıyafet, poz değişikliği"
+      },
+      "dramatic": {
+        "label": "Çok",
+        "description": "Tamamen farklı sahne/ortam"
+      }
+    }
+  },
+  "presets": {
+    "cafe": {
+      "name": "Cafe",
+      "description": "Rahat cafe, kahve atmosferi"
+    },
+    "beach": {
+      "name": "Plaj",
+      "description": "Gün batımı plaj havası"
+    },
+    "gym": {
+      "name": "Fitness",
+      "description": "Spor salonu / egzersiz sahnesi"
+    },
+    "streetFashion": {
+      "name": "Sokak Modası",
+      "description": "Şehir sokak stili"
+    },
+    "studioPortrait": {
+      "name": "Stüdyo Portre",
+      "description": "Profesyonel stüdyo çekimi"
+    },
+    "travel": {
+      "name": "Gezi",
+      "description": "Gezi / keşif"
+    },
+    "restaurant": {
+      "name": "Restoran",
+      "description": "Yemek / restoran sahnesi"
+    },
+    "nature": {
+      "name": "Doğa",
+      "description": "Açık hava / doğa"
+    },
+    "home": {
+      "name": "Ev / Yaşam Tarzı",
+      "description": "Rahat ev ortamı"
+    },
+    "nightCity": {
+      "name": "Gece Şehri",
+      "description": "Gece şehir ışıkları"
+    }
+  },
+  "errors": {
+    "notConfigured": "RunPod yapılandırılmamış. Lütfen Ayarlar'dan API anahtarınızı ekleyin.",
+    "noPrompt": "Lütfen bir prompt girin.",
+    "noImage": "Lütfen bir görsel yükleyin.",
+    "generationFailed": "Görsel oluşturma başarısız oldu.",
+    "unknown": "Beklenmeyen bir hata oluştu."
+  }
+}

@@ -1,0 +1,543 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "download": "Download",
+    "loading": "Loading...",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "search": "Search...",
+    "close": "Close",
+    "reset": "Reset",
+    "configure": "Configure",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "viewAll": "View All",
+    "selectAll": "Select All",
+    "deselectAll": "Deselect All",
+    "selected": "{count} selected",
+    "noResults": "No results found",
+    "retry": "Retry",
+    "pause": "Pause",
+    "generate": "Generate",
+    "edit": "Edit",
+    "add": "Add",
+    "create": "Create",
+    "back": "Back",
+    "next": "Next",
+    "today": "Today",
+    "clear": "Clear"
+  },
+  "nav": {
+    "create": "Create",
+    "library": "Library",
+    "character": "Character",
+    "insights": "Insights",
+    "system": "System",
+    "dashboard": "Dashboard",
+    "generateItem": "Generate",
+    "batch": "Batch",
+    "editor": "Editor",
+    "promptBuilder": "Prompt Builder",
+    "gallery": "Gallery",
+    "collections": "Collections",
+    "calendar": "Calendar",
+    "profile": "Profile",
+    "social": "Social",
+    "analytics": "Analytics",
+    "queue": "Queue",
+    "settings": "Settings",
+    "setup": "Setup",
+    "imagesGenerated": "Images Generated",
+    "pipelineInfo": "Flux 2 Dev + Face LoRA"
+  },
+  "header": {
+    "studio": "Studio",
+    "generating": "Generating...",
+    "connected": "Connected",
+    "notConfigured": "Not Configured",
+    "pageTitles": {
+      "/": "Dashboard",
+      "/generate": "Creative Studio",
+      "/batch": "Batch Generation",
+      "/editor": "Editing Suite",
+      "/prompt-builder": "Prompt Builder",
+      "/gallery": "Visual Library",
+      "/collections": "Collections",
+      "/calendar": "Content Calendar",
+      "/character": "Character Profile",
+      "/social": "Social Media",
+      "/analytics": "Analytics",
+      "/queue": "Queue",
+      "/settings": "Settings"
+    }
+  },
+  "dashboard": {
+    "heading": "Command Center",
+    "subtitle": "Your AI creative pipeline at a glance",
+    "setupRequired": "Setup Required",
+    "setupDescription": "Add your RunPod API key and endpoint ID to get started.",
+    "totalImages": "Total Images",
+    "today": "Today",
+    "favorites": "Favorites",
+    "recentCreations": "Recent Creations",
+    "quickActions": "Quick Actions",
+    "pipelineStack": "Pipeline Stack",
+    "actions": {
+      "generate": {
+        "title": "Generate",
+        "description": "Create from text prompts with scene presets"
+      },
+      "editor": {
+        "title": "Editor",
+        "description": "Edit scenes, outfits, enhance faces"
+      },
+      "gallery": {
+        "title": "Gallery",
+        "description": "Browse and manage generated images"
+      },
+      "batch": {
+        "title": "Batch",
+        "description": "Generate multiple variations at once"
+      },
+      "promptBuilder": {
+        "title": "Prompt Builder",
+        "description": "Build templates with variables"
+      },
+      "calendar": {
+        "title": "Calendar",
+        "description": "Plan your content schedule"
+      }
+    }
+  },
+  "generate": {
+    "heading": "Creative Studio",
+    "subtitle": "Pick a scene, write a prompt, generate",
+    "scenePresets": "Scene Presets",
+    "prompt": "Prompt",
+    "promptPlaceholder": "Describe your scene in detail...",
+    "qualityLabel": "Quality Level",
+    "generateButton": "Generate",
+    "generating": "Generating...",
+    "advancedSettings": "Advanced Settings",
+    "faceLoraFile": "Face LoRA File",
+    "negativePrompt": "Negative Prompt",
+    "negativePromptPlaceholder": "Elements you don't want...",
+    "seed": "Seed",
+    "seedRandom": "Random",
+    "preview": "Preview",
+    "downloadResult": "Download Result",
+    "reGenerate": "Re-Generate",
+    "usedSeed": "Used Seed",
+    "result": "Result",
+    "noResult": "Image will appear here",
+    "recommended": "Recommended",
+    "outOfRange": "Outside recommended range",
+    "advancedWarning": "Changing these settings overrides the quality profile. Keep defaults if unsure.",
+    "identitySection": "Identity & Realism",
+    "generationSection": "Generation Parameters",
+    "faceLoraHint": "File name of your trained face model",
+    "widthLabel": "Width (px)",
+    "heightLabel": "Height (px)",
+    "seedTooltip": "Same seed + same settings = same image. -1 produces a different result each time.",
+    "lastSeed": "Last: {seed}",
+    "faceEnhanceSection": "Face Enhancement",
+    "negativePromptTooltip": "Describe what you don't want in the image. Usually no need to change the default.",
+    "submitting": "Submitting job...",
+    "successGenerated": "Image generated successfully!",
+    "noImageReturned": "No image returned",
+    "previewPanel": "Preview",
+    "previewHint": "Generated image will appear here"
+  },
+  "editor": {
+    "heading": "Editing Suite",
+    "subtitle": "Edit and enhance your images",
+    "uploadImage": "Upload Image",
+    "uploadHint": "Drag and drop or click to select",
+    "dropHere": "Drop the image here",
+    "tabs": {
+      "edit": "Edit Scene",
+      "detailer": "Face Enhance + 4K"
+    },
+    "editPrompt": "Edit Prompt",
+    "editPromptPlaceholder": "Describe the changes you want...",
+    "changeAmount": "Change Amount",
+    "applyEdit": "Apply Edit",
+    "applying": "Applying...",
+    "enhance": "Enhance",
+    "enhancing": "Enhancing...",
+    "faceDetailerDenoise": "Face Enhancement Strength",
+    "upscale": "4K Upscale",
+    "advancedSettings": "Advanced Settings",
+    "editDenoise": "Edit Strength",
+    "negativePrompt": "Negative Prompt",
+    "compare": "Compare",
+    "original": "Original",
+    "result": "Result",
+    "downloadResult": "Download Result",
+    "noImage": "Upload an image from the left panel",
+    "seed": "Seed",
+    "originalImage": "Original Image",
+    "removeImage": "Remove image",
+    "selectDifferent": "Select Different Image",
+    "resultPanel": "Result",
+    "noResult": "Result will appear here",
+    "sideBySide": "Side by Side",
+    "before": "Before",
+    "after": "After",
+    "changeAmountTooltip": "Controls how far the result deviates from the original. \"Subtle\" for small retouches, \"Dramatic\" for a completely different scene.",
+    "advancedWarning": "Changing these settings overrides the change amount selection.",
+    "detailerInfo": "Face Enhancement reprocesses the face area and upscales to 4K with 4x-UltraSharp. Professional results in one click.",
+    "detailerButton": "Enhance Face + 4K Upscale",
+    "processing": "Processing...",
+    "editSuccess": "Image edited!",
+    "detailerSuccess": "Face enhanced + upscaled to 4K!",
+    "fileReadError": "Could not read image file",
+    "noPromptEdit": "Describe the changes you want",
+    "negativePromptTooltip": "Describe what you don't want in the image. Usually no need to change the default."
+  },
+  "batch": {
+    "heading": "Batch Generation",
+    "subtitle": "Generate multiple variations from a single prompt",
+    "prompt": "Prompt",
+    "promptPlaceholder": "Describe your scene in detail...",
+    "variations": "Number of Variations",
+    "variationsCount": "{count} variations",
+    "qualityLabel": "Quality Level",
+    "startBatch": "Start Batch Generation",
+    "generating": "Generating {current}/{total}...",
+    "advancedSettings": "Advanced Settings",
+    "seedStrategy": "Seed Strategy",
+    "seedStrategies": {
+      "random": "Random",
+      "sequential": "Sequential",
+      "fixed": "Fixed"
+    },
+    "baseSeed": "Base Seed",
+    "baseSeedLabel": "Base Seed",
+    "negativePrompt": "Negative Prompt",
+    "negativePromptLabel": "Negative Prompt",
+    "negativePromptTooltip": "Describe what you don't want in the image. Usually no need to change the default.",
+    "results": "Results",
+    "seed": "Seed",
+    "promptLabel": "Prompt",
+    "variationsLabel": "Number of Variations",
+    "variationsTooltip": "How many different images to generate from the same prompt",
+    "recommended": "Recommended",
+    "seedStrategyInfo": "Seed strategy controls variation diversity",
+    "seedStrategyLabel": "Seed Strategy",
+    "emptyTitle": "No results yet",
+    "emptyDescription": "Enter a prompt and click generate to start batch generation.",
+    "variation": "Variation",
+    "downloadAll": "Download All"
+  },
+  "gallery": {
+    "heading": "Visual Library",
+    "subtitle": "All generated images",
+    "filters": {
+      "all": "All",
+      "favorites": "Favorites",
+      "generate": "Generated",
+      "edit": "Edited",
+      "detailer": "Enhanced"
+    },
+    "searchPlaceholder": "Search prompts...",
+    "bulkMode": "Bulk Select",
+    "bulkDownload": "Download Selected",
+    "bulkDelete": "Delete Selected",
+    "detail": {
+      "prompt": "Prompt",
+      "action": "Action",
+      "seed": "Seed",
+      "created": "Created",
+      "download": "Download",
+      "delete": "Delete"
+    },
+    "empty": {
+      "title": "No images yet",
+      "description": "Go to the Generate page to create your first image."
+    },
+    "clearAll": "Clear All",
+    "imageCount": "{count} images"
+  },
+  "settings": {
+    "heading": "Settings",
+    "subtitle": "Configure your studio preferences",
+    "appearance": {
+      "title": "Appearance",
+      "description": "Theme and language settings",
+      "theme": "Theme",
+      "dark": "Dark",
+      "light": "Light",
+      "system": "System",
+      "language": "Language",
+      "languageTr": "Türkçe",
+      "languageEn": "English"
+    },
+    "connection": {
+      "title": "RunPod Connection",
+      "description": "API key and endpoint settings",
+      "apiKey": "API Key",
+      "apiKeyPlaceholder": "Your RunPod API key...",
+      "endpointId": "Endpoint ID",
+      "endpointIdPlaceholder": "Your RunPod endpoint ID...",
+      "testConnection": "Test Connection",
+      "testing": "Testing...",
+      "connectionOk": "Connection successful!",
+      "connectionFailed": "Connection failed"
+    },
+    "model": {
+      "title": "Character Model",
+      "description": "Face LoRA file name",
+      "faceLoraFile": "LoRA File",
+      "faceLoraPlaceholder": "my_face.safetensors"
+    },
+    "qualityProfile": {
+      "title": "Quality Profile",
+      "description": "Default generation settings",
+      "preset": "Recommended",
+      "advanced": "Advanced Defaults",
+      "identity": "Identity & Realism",
+      "generation": "Generation Parameters",
+      "width": "Width (px)",
+      "height": "Height (px)",
+      "faceEnhance": "Face Enhancement"
+    },
+    "saved": "Settings saved!"
+  },
+  "analytics": {
+    "heading": "Analytics",
+    "subtitle": "Your generation statistics",
+    "totalImages": "Total Images",
+    "thisWeek": "This Week",
+    "generated": "Generated",
+    "avgPerDay": "Avg / Day",
+    "dailyOutput": "Daily Output (Last 14 Days)",
+    "byAction": "By Action Type",
+    "hourlyActivity": "Hourly Activity",
+    "images": "Images",
+    "count": "Count",
+    "hour": "Hour"
+  },
+  "calendar": {
+    "heading": "Content Calendar",
+    "subtitle": "Plan and manage your content schedule",
+    "addContent": "Add Content",
+    "statuses": {
+      "draft": "Draft",
+      "scheduled": "Scheduled",
+      "published": "Published"
+    },
+    "noContent": "No content for this day",
+    "weekNav": "Week Navigation"
+  },
+  "character": {
+    "heading": "Character Profile",
+    "subtitle": "Define your AI influencer character",
+    "name": "Character Name",
+    "namePlaceholder": "E.g. Elif Studio",
+    "triggerWord": "Trigger Word",
+    "triggerWordPlaceholder": "E.g. ohwx woman",
+    "triggerWordHint": "Trigger word used in LoRA training",
+    "bio": "Bio",
+    "bioPlaceholder": "Describe your character...",
+    "faceLoraFile": "Face LoRA File",
+    "faceLoraPlaceholder": "my_face.safetensors",
+    "referencePhotos": "Reference Photos",
+    "referencePhotosHint": "Up to 20 photos (drag & drop or click)",
+    "profileSaved": "Profile saved!",
+    "profileReset": "Profile reset"
+  },
+  "collections": {
+    "heading": "Collections",
+    "subtitle": "Organize your images into collections",
+    "createNew": "New Collection",
+    "name": "Collection Name",
+    "namePlaceholder": "E.g. Instagram Posts",
+    "description": "Description",
+    "descriptionPlaceholder": "Describe the collection...",
+    "imageCount": "{count} images",
+    "empty": {
+      "title": "No collections yet",
+      "description": "Create your first collection to organize your images."
+    }
+  },
+  "social": {
+    "heading": "Social Media",
+    "subtitle": "Share your content on social media",
+    "platforms": "Platforms",
+    "platformNames": {
+      "instagram": "Instagram",
+      "tiktok": "TikTok",
+      "twitter": "X (Twitter)"
+    },
+    "notConnected": "Not connected",
+    "connected": "Connected",
+    "createPost": "Create Post",
+    "caption": "Caption",
+    "captionPlaceholder": "Write your post caption...",
+    "captionLimit": "{count}/2200",
+    "hashtags": "Hashtags",
+    "hashtagsPlaceholder": "#aistudio #influencer",
+    "postNow": "Post Now",
+    "schedule": "Schedule",
+    "postHistory": "Post History",
+    "noHistory": "No posts yet",
+    "connectRequired": "Connect a platform to share"
+  },
+  "promptBuilder": {
+    "heading": "Prompt Builder",
+    "subtitle": "Create reusable templates with variables",
+    "template": "Template",
+    "templatePlaceholder": "A photo of {trigger} at {location}, wearing {outfit}, {lighting} lighting, {mood} mood, {camera}",
+    "variables": "Variables",
+    "variablePresets": {
+      "location": "Location",
+      "outfit": "Outfit",
+      "lighting": "Lighting",
+      "mood": "Mood",
+      "camera": "Camera"
+    },
+    "preview": "Preview",
+    "copyPrompt": "Copy Prompt",
+    "generateWith": "Generate with this Prompt",
+    "savedTemplates": "Saved Templates",
+    "saveTemplate": "Save Template",
+    "templateName": "Template Name",
+    "templateNamePlaceholder": "E.g. Cafe Pose",
+    "noTemplates": "No saved templates yet"
+  },
+  "queue": {
+    "heading": "Queue",
+    "subtitle": "Manage your generation queue",
+    "statuses": {
+      "pending": "Pending",
+      "running": "Running",
+      "completed": "Completed",
+      "failed": "Failed"
+    },
+    "empty": "No jobs in queue",
+    "jobId": "Job #{id}",
+    "createdAt": "Created",
+    "retry": "Retry",
+    "removeJob": "Remove"
+  },
+  "quality": {
+    "fast": {
+      "name": "Fast",
+      "description": "Ideal for previews, 15-20 seconds"
+    },
+    "balanced": {
+      "name": "Balanced",
+      "description": "Quality and speed balance, 30-40 seconds"
+    },
+    "maximum": {
+      "name": "Maximum",
+      "description": "Highest quality, 50-70 seconds"
+    },
+    "hints": {
+      "face_lora_strength": {
+        "label": "Face Similarity",
+        "description": "Controls how closely the result matches your character's face. Higher = more similarity, but may reduce naturalness.",
+        "recommended": "0.85 – 0.95",
+        "warning": "Values above 1.0 may cause face distortions"
+      },
+      "realism_lora_strength": {
+        "label": "Realism",
+        "description": "Increases how realistic the photo looks. Too high may look overly sharp and artificial.",
+        "recommended": "0.30 – 0.45"
+      },
+      "ip_adapter_strength": {
+        "label": "Reference Photo Effect",
+        "description": "Controls how much your reference photo influences the result. Higher = more similarity but less pose/scene flexibility.",
+        "recommended": "0.40 – 0.60"
+      },
+      "steps": {
+        "label": "Processing Steps",
+        "description": "How many steps to generate the image. More steps = more detail but slower. Fewer is usually enough.",
+        "recommended": "25 – 35"
+      },
+      "cfg": {
+        "label": "Prompt Adherence",
+        "description": "Controls how closely the AI follows your prompt. For Flux models, low values (1.0) work best.",
+        "recommended": "1.0",
+        "warning": "Flux models work best around 1.0. 2.0+ is not recommended."
+      },
+      "face_detailer_denoise": {
+        "label": "Face Enhancement",
+        "description": "Controls how much the face area is reprocessed. Low = closer to original, high = more correction but risk of change.",
+        "recommended": "0.38 – 0.48",
+        "warning": "Values above 0.55 may alter the face"
+      },
+      "edit_denoise": {
+        "label": "Change Amount",
+        "description": "Controls how far the result deviates from the original. Low = small changes (color, light), high = big changes (scene, outfit).",
+        "recommended": "0.50 – 0.70"
+      }
+    },
+    "changeAmounts": {
+      "subtle": {
+        "label": "Subtle",
+        "description": "Small changes like lighting and color tone"
+      },
+      "moderate": {
+        "label": "Moderate",
+        "description": "Outfit and pose changes"
+      },
+      "dramatic": {
+        "label": "Dramatic",
+        "description": "Completely different scene/environment"
+      }
+    }
+  },
+  "presets": {
+    "cafe": {
+      "name": "Cafe",
+      "description": "Cozy cafe, coffee vibes"
+    },
+    "beach": {
+      "name": "Beach",
+      "description": "Sunset beach vibes"
+    },
+    "gym": {
+      "name": "Fitness",
+      "description": "Gym / workout scene"
+    },
+    "streetFashion": {
+      "name": "Street Fashion",
+      "description": "Urban street style"
+    },
+    "studioPortrait": {
+      "name": "Studio Portrait",
+      "description": "Professional studio headshot"
+    },
+    "travel": {
+      "name": "Travel",
+      "description": "Travel / wanderlust"
+    },
+    "restaurant": {
+      "name": "Restaurant",
+      "description": "Dining / food scene"
+    },
+    "nature": {
+      "name": "Nature",
+      "description": "Outdoor / nature"
+    },
+    "home": {
+      "name": "Home / Lifestyle",
+      "description": "Cozy home setting"
+    },
+    "nightCity": {
+      "name": "Night City",
+      "description": "Night city lights"
+    }
+  },
+  "errors": {
+    "notConfigured": "RunPod is not configured. Please add your API key in Settings.",
+    "noPrompt": "Please enter a prompt.",
+    "noImage": "Please upload an image.",
+    "generationFailed": "Image generation failed.",
+    "unknown": "An unexpected error occurred."
+  }
+}
