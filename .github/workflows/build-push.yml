@@ -12,7 +12,7 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    timeout-minutes: 30  # No model downloads — image is ~5-8GB
+    timeout-minutes: 60  # No model downloads — image is ~5-8GB, cache speeds up subsequent builds
 
     steps:
       - name: Checkout
