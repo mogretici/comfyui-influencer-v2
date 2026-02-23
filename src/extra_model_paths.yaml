@@ -1,16 +1,22 @@
 # Extra model paths for ComfyUI
-# Maps non-standard model directories (XLabs, InsightFace)
+# Models stored on RunPod Network Volume for fast cold starts
+
+network_volume:
+    base_path: /runpod-volume/models
+    checkpoints: checkpoints
+    unet: unet
+    clip: text_encoders
+    vae: vae
+    loras: loras
+    upscale_models: upscale_models
+    sams: sams
+    ultralytics: ultralytics
 
 xlabs:
-    base_path: /comfyui/models/xlabs
+    base_path: /runpod-volume/models/xlabs
     ipadapters: ipadapters
     controlnets: controlnets
 
 insightface:
-    base_path: /comfyui/models/insightface
+    base_path: /runpod-volume/models/insightface
     models: models
-
-# Custom LoRAs mounted from host (docker-compose volume)
-custom_loras:
-    base_path: /comfyui/models/loras
-    loras: custom

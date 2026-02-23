@@ -6,10 +6,22 @@ echo " ComfyUI + Flux 2 Dev — AI Influencer"
 echo " Starting container..."
 echo "============================================"
 
-# Copy extra model paths config if exists
+# Check Network Volume mount
+if [ ! -d "/runpod-volume" ]; then
+    echo "[ERROR] Network Volume not mounted at /runpod-volume"
+    echo "[ERROR] Please attach a Network Volume to this endpoint"
+    exit 1
+fi
+
+echo "[OK] Network Volume mounted at /runpod-volume"
+
+# Download models if not already present
+/download-models.sh
+
+# Copy extra model paths config
 if [ -f /extra_model_paths.yaml ]; then
     cp /extra_model_paths.yaml /comfyui/extra_model_paths.yaml
-    echo "[OK] Extra model paths configured"
+    echo "[OK] Extra model paths configured (Network Volume)"
 fi
 
 # Start ComfyUI in background
@@ -51,12 +63,6 @@ python -c "import torch; print(f'  GPU: {torch.cuda.get_device_name(0) if torch.
 python -c "import torch; print(f'  VRAM: {torch.cuda.get_device_properties(0).total_mem / 1024**3:.1f} GB' if torch.cuda.is_available() else '  VRAM: N/A')"
 echo "============================================"
 
-# Start RunPod handler (or keep ComfyUI running in local mode)
-if [ "${RUNPOD_SERVERLESS:-0}" = "1" ] || [ -n "${RUNPOD_POD_ID:-}" ]; then
-    echo "[...] Starting RunPod serverless handler..."
-    python /handler.py
-else
-    echo "[OK] Running in local mode — ComfyUI UI at http://0.0.0.0:8188"
-    echo "[OK] Press Ctrl+C to stop"
-    wait $COMFYUI_PID
-fi
+# Always start RunPod handler
+echo "[...] Starting RunPod serverless handler..."
+python /handler.py

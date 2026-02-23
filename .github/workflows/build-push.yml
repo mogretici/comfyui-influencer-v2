@@ -12,7 +12,7 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 30  # No model downloads — image is ~5-8GB
 
     steps:
       - name: Checkout
@@ -51,4 +51,4 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          # No build args needed — models are downloaded during build
+          # Models on Network Volume, not in image
