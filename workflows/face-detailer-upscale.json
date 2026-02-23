@@ -1,0 +1,159 @@
+{
+  "1": {
+    "class_type": "UnetLoaderGGUF",
+    "inputs": {
+      "unet_name": "flux2-dev-Q5_K_M.gguf"
+    },
+    "_meta": {
+      "title": "Load Flux 2 Dev GGUF"
+    }
+  },
+  "2": {
+    "class_type": "DualCLIPLoaderGGUF",
+    "inputs": {
+      "clip_name1": "t5xxl_fp8.safetensors",
+      "clip_name2": "clip_l.safetensors",
+      "type": "flux"
+    },
+    "_meta": {
+      "title": "Load CLIP Encoders"
+    }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "flux-ae.safetensors"
+    },
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "4": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "input.png"
+    },
+    "_meta": {
+      "title": "Load Input Image"
+    }
+  },
+  "5": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "A detailed photo of a beautiful woman, sharp focus, high resolution, professional photography",
+      "clip": ["2", 0]
+    },
+    "_meta": {
+      "title": "CLIP Positive Prompt"
+    }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "blurry, deformed, low quality, pixelated, artifact",
+      "clip": ["2", 0]
+    },
+    "_meta": {
+      "title": "CLIP Negative Prompt"
+    }
+  },
+  "7": {
+    "class_type": "UltralyticsDetectorProvider",
+    "inputs": {
+      "model_name": "face_yolov8m.pt"
+    },
+    "_meta": {
+      "title": "Face Detector — YOLOv8m"
+    }
+  },
+  "8": {
+    "class_type": "SAMLoader",
+    "inputs": {
+      "model_name": "mobile_sam.pt",
+      "device_mode": "AUTO"
+    },
+    "_meta": {
+      "title": "SAM Loader — MobileSAM"
+    }
+  },
+  "9": {
+    "class_type": "FaceDetailer",
+    "inputs": {
+      "image": ["4", 0],
+      "model": ["1", 0],
+      "clip": ["2", 0],
+      "vae": ["3", 0],
+      "positive": ["5", 0],
+      "negative": ["6", 0],
+      "bbox_detector": ["7", 0],
+      "sam_model_opt": ["8", 0],
+      "guide_size": 512,
+      "guide_size_for": true,
+      "max_size": 1024,
+      "seed": 42,
+      "steps": 20,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "beta",
+      "denoise": 0.42,
+      "feather": 20,
+      "noise_mask": true,
+      "force_inpaint": true,
+      "bbox_threshold": 0.5,
+      "bbox_dilation": 10,
+      "bbox_crop_factor": 3.0,
+      "sam_detection_hint": "center-1",
+      "sam_dilation": 0,
+      "sam_threshold": 0.93,
+      "sam_bbox_expansion": 0,
+      "sam_mask_hint_threshold": 0.7,
+      "sam_mask_hint_use_negative": "False",
+      "drop_size": 10,
+      "wildcard": "",
+      "cycle": 1
+    },
+    "_meta": {
+      "title": "FaceDetailer — Enhance Face"
+    }
+  },
+  "10": {
+    "class_type": "UpscaleModelLoader",
+    "inputs": {
+      "model_name": "4x-UltraSharp.pth"
+    },
+    "_meta": {
+      "title": "Load 4x-UltraSharp"
+    }
+  },
+  "11": {
+    "class_type": "ImageUpscaleWithModel",
+    "inputs": {
+      "upscale_model": ["10", 0],
+      "image": ["9", 0]
+    },
+    "_meta": {
+      "title": "Upscale 4x"
+    }
+  },
+  "12": {
+    "class_type": "ImageScaleBy",
+    "inputs": {
+      "image": ["11", 0],
+      "upscale_method": "lanczos",
+      "scale_by": 0.5
+    },
+    "_meta": {
+      "title": "Scale Down to 2x (4K output)"
+    }
+  },
+  "13": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": ["12", 0],
+      "filename_prefix": "influencer_4k"
+    },
+    "_meta": {
+      "title": "Save 4K Image"
+    }
+  }
+}

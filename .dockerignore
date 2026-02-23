@@ -1,0 +1,45 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Output files
+output/
+*.png
+*.jpg
+*.jpeg
+*.webp
+
+# Local model files (built into image)
+models/
+
+# Documentation (not needed in image)
+README.md
+docs/
+*.md
+
+# Python cache
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+
+# Docker
+docker-compose.yml
+docker-compose.*.yml
+
+# CI
+.github/
+
+# Test files
+scripts/test-*.py
+tests/

@@ -1,0 +1,16 @@
+# Extra model paths for ComfyUI
+# Maps non-standard model directories (XLabs, InsightFace)
+
+xlabs:
+    base_path: /comfyui/models/xlabs
+    ipadapters: ipadapters
+    controlnets: controlnets
+
+insightface:
+    base_path: /comfyui/models/insightface
+    models: models
+
+# Custom LoRAs mounted from host (docker-compose volume)
+custom_loras:
+    base_path: /comfyui/models/loras
+    loras: custom
