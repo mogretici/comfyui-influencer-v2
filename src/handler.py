@@ -25,6 +25,7 @@ import uuid
 import base64
 import urllib.request
 import urllib.error
+import urllib.parse
 from io import BytesIO
 
 import runpod
@@ -119,10 +120,11 @@ def build_generate_workflow(params: dict) -> dict:
     negative = params.get("negative_prompt", "blurry, deformed, cartoon, anime, painting, illustration, text, watermark")
 
     # Model parameters
-    face_lora = params.get("face_lora", "my_face.safetensors")
-    face_lora_strength = params.get("face_lora_strength", 0.9)
+    face_lora = params.get("face_lora", "")
+    face_lora_strength = params.get("face_lora_strength", 0.0)
     realism_lora_strength = params.get("realism_lora_strength", 0.35)
     ip_adapter_strength = params.get("ip_adapter_strength", 0.5)
+    skip_face_lora = not face_lora or face_lora_strength == 0.0
 
     # Generation parameters
     width = params.get("width", 1024)
@@ -138,8 +140,35 @@ def build_generate_workflow(params: dict) -> dict:
     fd_margin = params.get("face_margin", 1.6)
     fd_feather = params.get("face_feather", 20)
 
+    # If skipping face LoRA, remove that node and rewire connections
+    # Face LoRA node takes model from UnetLoader and clip from CLIPLoader,
+    # downstream nodes (Realism LoRA etc.) reference Face LoRA outputs.
+    # We rewire them to point directly to UnetLoader/CLIPLoader.
+    if skip_face_lora:
+        face_lora_node_id = None
+        face_lora_model_src = None
+        face_lora_clip_src = None
+
+        for node_id, node in wf.items():
+            if node.get("class_type") == "LoraLoader" and "face" in node.get("_meta", {}).get("title", "").lower():
+                face_lora_node_id = node_id
+                face_lora_model_src = node["inputs"].get("model")  # e.g. ["1", 0]
+                face_lora_clip_src = node["inputs"].get("clip")    # e.g. ["2", 0]
+                break
+
+        if face_lora_node_id:
+            del wf[face_lora_node_id]
+            # Rewire all nodes that referenced face LoRA outputs
+            for node_id, node in wf.items():
+                inputs = node.get("inputs", {})
+                for key, val in inputs.items():
+                    if isinstance(val, list) and len(val) == 2 and val[0] == face_lora_node_id:
+                        if val[1] == 0 and face_lora_model_src:
+                            inputs[key] = face_lora_model_src
+                        elif val[1] == 1 and face_lora_clip_src:
+                            inputs[key] = face_lora_clip_src
+
     # Apply parameters to workflow nodes
-    # Node mappings depend on workflow structure
     for node_id, node in wf.items():
         class_type = node.get("class_type", "")
 
@@ -163,8 +192,8 @@ def build_generate_workflow(params: dict) -> dict:
             node["inputs"]["width"] = width
             node["inputs"]["height"] = height
 
-        # LoRA Loader — Face LoRA
-        if class_type == "LoraLoader" and "face" in node.get("_meta", {}).get("title", "").lower():
+        # LoRA Loader — Face LoRA (only if not skipped)
+        if not skip_face_lora and class_type == "LoraLoader" and "face" in node.get("_meta", {}).get("title", "").lower():
             node["inputs"]["lora_name"] = face_lora
             node["inputs"]["strength_model"] = face_lora_strength
             node["inputs"]["strength_clip"] = face_lora_strength

@@ -15,7 +15,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 # Stage 2: System dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3.12 python3.12-venv python3.12-dev \
-    git wget ffmpeg unzip build-essential \
+    git wget curl ffmpeg unzip build-essential \
     libgl1 libglib2.0-0 libsm6 libxext6 libxrender1 \
     && ln -sf /usr/bin/python3.12 /usr/bin/python \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -76,9 +76,10 @@ RUN apt-get purge -y build-essential python3.12-dev && \
     apt-get autoremove -y && apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /root/.cache/pip
 
-# Stage 7: Handler + startup files
+# Stage 7: Handler + startup files + workflows
 WORKDIR /
 COPY src/start.sh src/handler.py src/extra_model_paths.yaml src/download-models.sh ./
+COPY workflows/ /workflows/
 RUN chmod +x /start.sh /download-models.sh
 
 CMD ["/start.sh"]
