@@ -234,16 +234,40 @@ def build_edit_workflow(params: dict) -> dict:
     if seed == -1:
         seed = int(time.time() * 1000) % (2**32)
 
-    face_lora = params.get("face_lora", "my_face.safetensors")
-    face_lora_strength = params.get("face_lora_strength", 0.9)
+    face_lora = params.get("face_lora", "")
+    face_lora_strength = params.get("face_lora_strength", 0.0)
+    skip_face_lora = not face_lora or face_lora_strength == 0.0
 
-    # If input image is base64, save it temporarily
+    # Upload input image to ComfyUI (LoadImage reads from ComfyUI input dir, not /tmp/)
     input_image_b64 = params.get("input_image", "")
+    input_filename = None
     if input_image_b64:
-        img_bytes = base64.b64decode(input_image_b64)
-        input_path = f"/tmp/input_{uuid.uuid4().hex[:8]}.png"
-        with open(input_path, "wb") as f:
-            f.write(img_bytes)
+        input_filename = upload_reference_image(input_image_b64)
+
+    if not input_filename:
+        raise ValueError("input_image is required for edit action")
+
+    # Skip face LoRA node if not provided
+    if skip_face_lora:
+        face_lora_node_id = None
+        face_lora_model_src = None
+        face_lora_clip_src = None
+        for node_id, node in wf.items():
+            if node.get("class_type") == "LoraLoader" and "face" in node.get("_meta", {}).get("title", "").lower():
+                face_lora_node_id = node_id
+                face_lora_model_src = node["inputs"].get("model")
+                face_lora_clip_src = node["inputs"].get("clip")
+                break
+        if face_lora_node_id:
+            del wf[face_lora_node_id]
+            for node_id, node in wf.items():
+                inputs = node.get("inputs", {})
+                for key, val in inputs.items():
+                    if isinstance(val, list) and len(val) == 2 and val[0] == face_lora_node_id:
+                        if val[1] == 0 and face_lora_model_src:
+                            inputs[key] = face_lora_model_src
+                        elif val[1] == 1 and face_lora_clip_src:
+                            inputs[key] = face_lora_clip_src
 
     for node_id, node in wf.items():
         class_type = node.get("class_type", "")
@@ -258,10 +282,10 @@ def build_edit_workflow(params: dict) -> dict:
             node["inputs"]["seed"] = seed
             node["inputs"]["denoise"] = denoise
 
-        if class_type == "LoadImage" and input_image_b64:
-            node["inputs"]["image"] = input_path
+        if class_type == "LoadImage":
+            node["inputs"]["image"] = input_filename
 
-        if class_type == "LoraLoader" and "face" in node.get("_meta", {}).get("title", "").lower():
+        if not skip_face_lora and class_type == "LoraLoader" and "face" in node.get("_meta", {}).get("title", "").lower():
             node["inputs"]["lora_name"] = face_lora
             node["inputs"]["strength_model"] = face_lora_strength
             node["inputs"]["strength_clip"] = face_lora_strength
@@ -274,34 +298,34 @@ def build_detailer_workflow(params: dict) -> dict:
     wf = load_workflow("face-detailer-upscale")
 
     fd_denoise = params.get("face_detailer_denoise", 0.42)
-    upscale_factor = params.get("upscale_factor", 4)
+    # scale_by is applied AFTER 4x-UltraSharp: 0.5 = net 2x, 1.0 = net 4x
+    scale_by = params.get("scale_by", 0.5)
     seed = params.get("seed", -1)
     if seed == -1:
         seed = int(time.time() * 1000) % (2**32)
 
+    # Upload input image to ComfyUI input dir
     input_image_b64 = params.get("input_image", "")
+    input_filename = None
     if input_image_b64:
-        img_bytes = base64.b64decode(input_image_b64)
-        input_path = f"/tmp/input_{uuid.uuid4().hex[:8]}.png"
-        with open(input_path, "wb") as f:
-            f.write(img_bytes)
+        input_filename = upload_reference_image(input_image_b64)
+
+    if not input_filename:
+        raise ValueError("input_image is required for detailer action")
 
     for node_id, node in wf.items():
         class_type = node.get("class_type", "")
 
-        if class_type == "LoadImage" and input_image_b64:
-            node["inputs"]["image"] = input_path
+        if class_type == "LoadImage":
+            node["inputs"]["image"] = input_filename
 
         if class_type == "FaceDetailer":
             node["inputs"]["denoise"] = fd_denoise
             if "seed" in node["inputs"]:
                 node["inputs"]["seed"] = seed
 
-        if class_type == "ImageUpscaleWithModel":
-            pass  # Upscaler model is baked in
-
         if class_type == "ImageScaleBy":
-            node["inputs"]["scale_by"] = upscale_factor
+            node["inputs"]["scale_by"] = scale_by
 
     return wf
 
