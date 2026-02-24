@@ -50,7 +50,7 @@ MAX_RETRIES=300
 RETRY_COUNT=0
 
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-    if curl -s http://127.0.0.1:8188/system_stats > /dev/null 2>&1; then
+    if curl -s --max-time 5 http://127.0.0.1:8188/system_stats > /dev/null 2>&1; then
         echo "[OK] ComfyUI is ready!"
         break
     fi
