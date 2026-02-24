@@ -9,7 +9,7 @@
     }
   },
   "2": {
-    "class_type": "DualCLIPLoaderGGUF",
+    "class_type": "DualCLIPLoader",
     "inputs": {
       "clip_name1": "t5xxl_fp8.safetensors",
       "clip_name2": "clip_l.safetensors",
