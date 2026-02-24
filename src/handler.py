@@ -28,10 +28,16 @@ import urllib.error
 import urllib.parse
 from io import BytesIO
 
+import os
 import runpod
 
 COMFYUI_URL = "http://127.0.0.1:8188"
 TIMEOUT_SECONDS = 240
+
+
+def debug_log(msg):
+    """Print debug log with timestamp."""
+    print(f"[DEBUG {time.strftime('%H:%M:%S')}] {msg}", flush=True)
 
 
 # ──────────────────────────────────────────────
@@ -51,25 +57,35 @@ def queue_prompt(workflow: dict) -> str:
         resp = urllib.request.urlopen(req, timeout=30)
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8", errors="replace")
+        debug_log(f"ComfyUI REJECTED workflow ({e.code}): {body[:500]}")
         raise RuntimeError(f"ComfyUI rejected workflow ({e.code}): {body}") from e
     result = json.loads(resp.read())
+    debug_log(f"queue_prompt OK: prompt_id={result.get('prompt_id', '?')}")
     return result["prompt_id"]
 
 
 def poll_completion(prompt_id: str) -> dict:
     """Poll until prompt completes or times out. Returns output info."""
     start = time.time()
+    poll_count = 0
     while time.time() - start < TIMEOUT_SECONDS:
+        poll_count += 1
         try:
             resp = urllib.request.urlopen(
                 f"{COMFYUI_URL}/history/{prompt_id}", timeout=10
             )
             history = json.loads(resp.read())
             if prompt_id in history:
+                elapsed = time.time() - start
+                debug_log(f"Workflow completed in {elapsed:.1f}s ({poll_count} polls)")
                 return history[prompt_id]
         except urllib.error.URLError:
             pass
+        if poll_count % 10 == 0:
+            elapsed = time.time() - start
+            debug_log(f"Still waiting... {elapsed:.0f}s elapsed ({poll_count} polls)")
         time.sleep(1.5)
+    debug_log(f"TIMEOUT after {TIMEOUT_SECONDS}s ({poll_count} polls)")
     raise TimeoutError(f"Workflow did not complete within {TIMEOUT_SECONDS}s")
 
 
@@ -77,9 +93,11 @@ def get_output_images(history: dict) -> list[str]:
     """Extract base64 images from workflow history output."""
     images = []
     outputs = history.get("outputs", {})
+    debug_log(f"get_output_images: {len(outputs)} output nodes: {list(outputs.keys())}")
     for node_id, node_output in outputs.items():
         if "images" not in node_output:
             continue
+        debug_log(f"  Node {node_id}: {len(node_output['images'])} images")
         for img_info in node_output["images"]:
             filename = img_info.get("filename", "")
             subfolder = img_info.get("subfolder", "")
@@ -105,8 +123,11 @@ def load_workflow(name: str) -> dict:
     for path in paths:
         try:
             with open(path) as f:
-                return json.load(f)
+                wf = json.load(f)
+                debug_log(f"Loaded workflow '{name}' from {path} ({len(wf)} nodes)")
+                return wf
         except FileNotFoundError:
+            debug_log(f"Workflow not found at {path}")
             continue
     raise FileNotFoundError(f"Workflow '{name}' not found in {paths}")
 
@@ -129,6 +150,9 @@ def build_generate_workflow(params: dict) -> dict:
     realism_lora_strength = params.get("realism_lora_strength", 0.35)
     ip_adapter_strength = params.get("ip_adapter_strength", 0.5)
     skip_face_lora = not face_lora or face_lora_strength == 0.0
+
+    debug_log(f"build_generate: face_lora={face_lora!r}, strength={face_lora_strength}, skip={skip_face_lora}")
+    debug_log(f"build_generate: realism_strength={realism_lora_strength}, ip_adapter={ip_adapter_strength}")
 
     # Generation parameters
     width = params.get("width", 1024)
@@ -365,12 +389,51 @@ def handler(event: dict) -> dict:
     try:
         params = event.get("input", {})
         action = params.get("action", "generate")
+        debug_log(f"=== REQUEST START === action={action}")
+        debug_log(f"Params: prompt={params.get('prompt', '')[:80]}...")
+
+        # Debug: check model directories
+        for d in ["/runpod-volume/models/ultralytics",
+                  "/runpod-volume/models/ultralytics/bbox",
+                  "/runpod-volume/models/unet",
+                  "/runpod-volume/models/loras",
+                  "/runpod-volume/models/sams"]:
+            if os.path.isdir(d):
+                files = os.listdir(d)
+                debug_log(f"DIR {d}: {files}")
+            else:
+                debug_log(f"DIR {d}: MISSING")
+
+        # Debug: check extra_model_paths
+        yaml_path = "/comfyui/extra_model_paths.yaml"
+        if os.path.exists(yaml_path):
+            with open(yaml_path) as f:
+                debug_log(f"extra_model_paths.yaml:\n{f.read()}")
+
+        # Debug: ask ComfyUI what models it sees (object_info for UltralyticsDetectorProvider)
+        try:
+            resp = urllib.request.urlopen(f"{COMFYUI_URL}/object_info/UltralyticsDetectorProvider", timeout=10)
+            info = json.loads(resp.read())
+            model_list = info.get("UltralyticsDetectorProvider", {}).get("input", {}).get("required", {}).get("model_name", [])
+            debug_log(f"ComfyUI UltralyticsDetectorProvider models: {model_list}")
+        except Exception as e:
+            debug_log(f"Could not query UltralyticsDetectorProvider: {e}")
+
+        # Debug: check what unet models ComfyUI sees
+        try:
+            resp = urllib.request.urlopen(f"{COMFYUI_URL}/object_info/UnetLoaderGGUF", timeout=10)
+            info = json.loads(resp.read())
+            unet_list = info.get("UnetLoaderGGUF", {}).get("input", {}).get("required", {}).get("unet_name", [])
+            debug_log(f"ComfyUI UnetLoaderGGUF models: {unet_list}")
+        except Exception as e:
+            debug_log(f"Could not query UnetLoaderGGUF: {e}")
 
         # Upload reference image for IP-Adapter if provided
         ref_image_b64 = params.get("reference_image")
         ref_filename = None
         if ref_image_b64:
             ref_filename = upload_reference_image(ref_image_b64)
+            debug_log(f"Uploaded reference image: {ref_filename}")
 
         # Build workflow based on action
         if action == "generate":
@@ -382,6 +445,12 @@ def handler(event: dict) -> dict:
         else:
             return {"error": f"Unknown action: {action}"}
 
+        # Debug: log key workflow nodes
+        for node_id, node in workflow.items():
+            ct = node.get("class_type", "")
+            if any(k in ct.lower() for k in ["ultralytics", "unet", "lora", "clip", "vae", "sam"]):
+                debug_log(f"Node {node_id} ({ct}): {json.dumps(node.get('inputs', {}))[:200]}")
+
         # Inject reference image filename into IP-Adapter nodes
         if ref_filename:
             for node_id, node in workflow.items():
@@ -390,21 +459,27 @@ def handler(event: dict) -> dict:
                     node["inputs"]["image"] = ref_filename
 
         # Queue and wait
+        debug_log("Queueing workflow...")
         prompt_id = queue_prompt(workflow)
+        debug_log(f"Queued: prompt_id={prompt_id}")
         history = poll_completion(prompt_id)
 
         # Check for errors
         status = history.get("status", {})
         if status.get("status_str") == "error":
             messages = status.get("messages", [])
+            debug_log(f"Workflow FAILED: {messages}")
             return {"error": "Workflow execution failed", "details": messages}
 
         # Extract output images
         images = get_output_images(history)
+        debug_log(f"Output: {len(images)} images")
 
         if not images:
+            debug_log("No output images!")
             return {"error": "No output images produced"}
 
+        debug_log(f"=== REQUEST SUCCESS === {len(images)} images, seed={params.get('seed', -1)}")
         return {
             "images": images,
             "prompt_id": prompt_id,
@@ -412,10 +487,13 @@ def handler(event: dict) -> dict:
         }
 
     except TimeoutError as e:
+        debug_log(f"TIMEOUT: {e}")
         return {"error": str(e)}
     except FileNotFoundError as e:
+        debug_log(f"FILE NOT FOUND: {e}")
         return {"error": str(e)}
     except Exception as e:
+        debug_log(f"EXCEPTION: {type(e).__name__}: {e}")
         return {"error": f"Unexpected error: {type(e).__name__}: {str(e)}"}
 
 

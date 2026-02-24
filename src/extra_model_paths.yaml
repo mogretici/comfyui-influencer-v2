@@ -10,6 +10,7 @@ network_volume:
     loras: loras
     upscale_models: upscale_models
     sams: sams
+    ultralytics: ultralytics
     ultralytics_bbox: ultralytics/bbox
     ultralytics_segm: ultralytics/segm
 
