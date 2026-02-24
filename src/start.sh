@@ -24,6 +24,15 @@ if [ -f /extra_model_paths.yaml ]; then
     echo "[OK] Extra model paths configured (Network Volume)"
 fi
 
+# Disable ComfyUI-Manager network calls (saves ~2min startup)
+export COMFYUI_MANAGER_MODE=local
+mkdir -p /comfyui/user/__manager
+cat > /comfyui/user/__manager/config.ini << 'CONF'
+[default]
+network_mode = local
+CONF
+echo "[OK] ComfyUI-Manager set to local mode"
+
 # Start ComfyUI in background
 echo "[...] Starting ComfyUI server..."
 cd /comfyui && python main.py \
@@ -37,7 +46,7 @@ COMFYUI_PID=$!
 
 # Wait for ComfyUI to be ready
 echo "[...] Waiting for ComfyUI to initialize..."
-MAX_RETRIES=120
+MAX_RETRIES=300
 RETRY_COUNT=0
 
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
