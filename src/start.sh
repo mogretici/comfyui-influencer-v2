@@ -38,6 +38,7 @@ echo "[...] Starting ComfyUI server..."
 cd /comfyui && python main.py \
     --listen 0.0.0.0 \
     --port 8188 \
+    --highvram \
     --disable-auto-launch \
     --disable-metadata \
     &

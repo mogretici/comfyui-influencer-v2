@@ -133,7 +133,7 @@
   "13": {
     "class_type": "SAMLoader",
     "inputs": {
-      "model_name": "mobile_sam.pt",
+      "model_name": "sam_vit_b_01ec64.pth",
       "device_mode": "AUTO"
     },
     "_meta": {

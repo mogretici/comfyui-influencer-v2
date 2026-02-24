@@ -5,7 +5,7 @@ set -euo pipefail
 # Subsequent runs skip already-downloaded files
 
 MODELS_DIR="/runpod-volume/models"
-MARKER="$MODELS_DIR/.download_complete"
+MARKER="$MODELS_DIR/.download_complete_v2"
 
 if [ -f "$MARKER" ]; then
     echo "[OK] Models already downloaded (marker found)"
@@ -76,9 +76,9 @@ download "$MODELS_DIR/ultralytics/bbox/face_yolov8m.pt" \
     "https://huggingface.co/Tenofas/ComfyUI/resolve/main/ultralytics/bbox/face_yolov8m.pt" \
     "YOLOv8m Face Detection"
 
-download "$MODELS_DIR/sams/mobile_sam.pt" \
-    "https://raw.githubusercontent.com/ChaoningZhang/MobileSAM/master/weights/mobile_sam.pt" \
-    "MobileSAM"
+download "$MODELS_DIR/sams/sam_vit_b_01ec64.pth" \
+    "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth" \
+    "SAM ViT-B"
 
 # 7. 4x-UltraSharp Upscaler (~65MB)
 download "$MODELS_DIR/upscale_models/4x-UltraSharp.pth" \
