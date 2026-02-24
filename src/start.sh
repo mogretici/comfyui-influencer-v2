@@ -69,7 +69,7 @@ echo " System Info:"
 python -c "import torch; print(f'  PyTorch: {torch.__version__}')"
 python -c "import torch; print(f'  CUDA: {torch.version.cuda}')"
 python -c "import torch; print(f'  GPU: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"N/A\"}')"
-python -c "import torch; print(f'  VRAM: {torch.cuda.get_device_properties(0).total_mem / 1024**3:.1f} GB' if torch.cuda.is_available() else '  VRAM: N/A')"
+python -c "import torch; print(f'  VRAM: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB' if torch.cuda.is_available() else '  VRAM: N/A')"
 echo "============================================"
 
 # Always start RunPod handler
