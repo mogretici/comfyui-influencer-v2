@@ -47,7 +47,11 @@ def queue_prompt(workflow: dict) -> str:
         data=payload,
         headers={"Content-Type": "application/json"},
     )
-    resp = urllib.request.urlopen(req, timeout=30)
+    try:
+        resp = urllib.request.urlopen(req, timeout=30)
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"ComfyUI rejected workflow ({e.code}): {body}") from e
     result = json.loads(resp.read())
     return result["prompt_id"]
 
