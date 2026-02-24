@@ -116,7 +116,7 @@
   "11": {
     "class_type": "UltralyticsDetectorProvider",
     "inputs": {
-      "model_name": "bbox/face_yolov8m.pt"
+      "model_name": "face_yolov8m.pt"
     },
     "_meta": {
       "title": "Face Detector — YOLOv8m"
