@@ -27,7 +27,7 @@ import os
 import runpod
 
 COMFYUI_URL = "http://127.0.0.1:8188"
-TIMEOUT_SECONDS = 240
+TIMEOUT_SECONDS = 600
 
 
 def debug_log(msg):
