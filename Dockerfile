@@ -1,6 +1,6 @@
 # ============================================================
-# ComfyUI + Flux 2 Dev — AI Influencer Pipeline
-# Target: RunPod Serverless (L40S 48GB)
+# ComfyUI + Flux 2 Dev — AI Influencer Pipeline v3
+# Target: RunPod Serverless (L40S/A40 48GB)
 # Image Size: ~5-8 GB (models on Network Volume)
 # ============================================================
 
@@ -67,6 +67,10 @@ RUN cd /comfyui/custom_nodes && \
 RUN cd /comfyui/custom_nodes && \
     git clone --depth 1 https://github.com/Fannovel16/comfyui_controlnet_aux.git && \
     cd comfyui_controlnet_aux && pip install --no-cache-dir -r requirements.txt
+
+# 5.5 ACE++ Character Consistency
+RUN cd /comfyui/custom_nodes && \
+    git clone --depth 1 https://github.com/linhoi/ComfyUI-ACE_Plus.git
 
 # Models are downloaded at runtime to Network Volume — not baked into image
 # See src/download-models.sh for the model download logic

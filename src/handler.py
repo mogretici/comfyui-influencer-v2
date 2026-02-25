@@ -1,22 +1,17 @@
 """
-RunPod Serverless Handler — ComfyUI + Flux 2 Dev AI Influencer Pipeline
+RunPod Serverless Handler — ComfyUI + Flux 2 Dev AI Influencer Pipeline v3
 
 Endpoints:
   - generate: Text-to-image with Face LoRA + IP-Adapter + FaceDetailer
   - edit: Image-to-image scene/outfit change
   - detailer: FaceDetailer + 4K upscale on existing image
 
-Usage:
-  POST to RunPod serverless with:
-  {
-    "input": {
-      "action": "generate",
-      "prompt": "A photo of ohwx woman in a cafe...",
-      "face_lora": "my_face.safetensors",
-      "face_lora_strength": 0.9,
-      ...
-    }
-  }
+Flux 2 Architecture:
+  - UNet: UnetLoaderGGUF (flux2-dev-Q5_K_M.gguf)
+  - Text Encoder: CLIPLoader (Mistral 3 Small FP8, type: flux2)
+  - VAE: VAELoader (flux2-vae.safetensors)
+  - Sampling: SamplerCustomAdvanced + BasicGuider (no negative prompt for main sampler)
+  - LoRA: LoraLoaderModelOnly (model only, no clip)
 """
 
 import json
@@ -133,105 +128,93 @@ def load_workflow(name: str) -> dict:
 
 
 # ──────────────────────────────────────────────
-# Workflow builders
+# Workflow builders — Flux 2 Architecture
 # ──────────────────────────────────────────────
 
 def build_generate_workflow(params: dict) -> dict:
-    """Build txt2img workflow with Face LoRA + IP-Adapter + FaceDetailer."""
-    wf = load_workflow("txt2img-face-lora")
+    """Build txt2img workflow with Face LoRA + IP-Adapter + FaceDetailer.
+
+    Flux 2 node structure:
+      1  UnetLoaderGGUF → 2 CLIPLoader → 3 VAELoader
+      4  CLIPTextEncode(positive) → 6 BasicGuider
+      5  RandomNoise → 10 SamplerCustomAdvanced
+      7  KSamplerSelect → 10
+      8  BasicScheduler → 10
+      9  EmptySD3LatentImage → 10
+      10 SamplerCustomAdvanced → 11 VAEDecode → 15 FaceDetailer → 16 SaveImage
+
+    Face LoRA (optional):
+      1b LoraLoaderModelOnly → model replaces node 1 output in guider/scheduler/facedetailer
+    """
+    wf = load_workflow("txt2img-flux2")
 
     # Core prompt
     prompt = params.get("prompt", "A photo of ohwx woman, professional headshot")
-    negative = params.get("negative_prompt", "blurry, deformed, cartoon, anime, painting, illustration, text, watermark")
 
     # Model parameters
     face_lora = params.get("face_lora", "")
     face_lora_strength = params.get("face_lora_strength", 0.0)
-    realism_lora_strength = params.get("realism_lora_strength", 0.35)
     ip_adapter_strength = params.get("ip_adapter_strength", 0.5)
     skip_face_lora = not face_lora or face_lora_strength == 0.0
 
     debug_log(f"build_generate: face_lora={face_lora!r}, strength={face_lora_strength}, skip={skip_face_lora}")
-    debug_log(f"build_generate: realism_strength={realism_lora_strength}, ip_adapter={ip_adapter_strength}")
+    debug_log(f"build_generate: ip_adapter={ip_adapter_strength}")
 
     # Generation parameters
     width = params.get("width", 1024)
     height = params.get("height", 1024)
     steps = params.get("steps", 28)
-    cfg = params.get("cfg", 1.0)
     seed = params.get("seed", -1)
     if seed == -1:
         seed = int(time.time() * 1000) % (2**32)
 
     # FaceDetailer parameters
     fd_denoise = params.get("face_detailer_denoise", 0.42)
-    fd_margin = params.get("face_margin", 1.6)
     fd_feather = params.get("face_feather", 20)
 
-    # If skipping face LoRA, remove that node and rewire connections
-    # Face LoRA node takes model from UnetLoader and clip from CLIPLoader,
-    # downstream nodes (Realism LoRA etc.) reference Face LoRA outputs.
-    # We rewire them to point directly to UnetLoader/CLIPLoader.
-    if skip_face_lora:
-        face_lora_node_id = None
-        face_lora_model_src = None
-        face_lora_clip_src = None
-
+    # ── Inject Face LoRA node if provided ──
+    if not skip_face_lora:
+        # Add LoraLoaderModelOnly node as "1b"
+        wf["1b"] = {
+            "class_type": "LoraLoaderModelOnly",
+            "inputs": {
+                "model": ["1", 0],
+                "lora_name": face_lora,
+                "strength_model": face_lora_strength,
+            },
+            "_meta": {"title": "Face LoRA (Model Only)"},
+        }
+        # Rewire: all nodes that reference model from "1" should now use "1b"
         for node_id, node in wf.items():
-            if node.get("class_type") == "LoraLoader" and "face" in node.get("_meta", {}).get("title", "").lower():
-                face_lora_node_id = node_id
-                face_lora_model_src = node["inputs"].get("model")  # e.g. ["1", 0]
-                face_lora_clip_src = node["inputs"].get("clip")    # e.g. ["2", 0]
-                break
+            if node_id == "1b":
+                continue
+            inputs = node.get("inputs", {})
+            for key, val in inputs.items():
+                if isinstance(val, list) and len(val) == 2 and val[0] == "1" and val[1] == 0:
+                    inputs[key] = ["1b", 0]
 
-        if face_lora_node_id:
-            del wf[face_lora_node_id]
-            # Rewire all nodes that referenced face LoRA outputs
-            for node_id, node in wf.items():
-                inputs = node.get("inputs", {})
-                for key, val in inputs.items():
-                    if isinstance(val, list) and len(val) == 2 and val[0] == face_lora_node_id:
-                        if val[1] == 0 and face_lora_model_src:
-                            inputs[key] = face_lora_model_src
-                        elif val[1] == 1 and face_lora_clip_src:
-                            inputs[key] = face_lora_clip_src
-
-    # Apply parameters to workflow nodes
+    # ── Apply parameters to workflow nodes ──
     for node_id, node in wf.items():
         class_type = node.get("class_type", "")
 
-        # CLIP Text Encode — positive prompt
+        # CLIPTextEncode — positive prompt
         if class_type == "CLIPTextEncode" and "positive" in node.get("_meta", {}).get("title", "").lower():
             node["inputs"]["text"] = prompt
 
-        # CLIP Text Encode — negative prompt
-        if class_type == "CLIPTextEncode" and "negative" in node.get("_meta", {}).get("title", "").lower():
-            node["inputs"]["text"] = negative
+        # RandomNoise — seed
+        if class_type == "RandomNoise":
+            node["inputs"]["noise_seed"] = seed
 
-        # KSampler
-        if class_type in ("KSampler", "KSamplerAdvanced"):
-            node["inputs"]["seed"] = seed
+        # BasicScheduler — steps
+        if class_type == "BasicScheduler":
             node["inputs"]["steps"] = steps
-            if "cfg" in node["inputs"]:
-                node["inputs"]["cfg"] = cfg
 
-        # Empty Latent Image
-        if class_type == "EmptyLatentImage":
+        # EmptySD3LatentImage — dimensions
+        if class_type == "EmptySD3LatentImage":
             node["inputs"]["width"] = width
             node["inputs"]["height"] = height
 
-        # LoRA Loader — Face LoRA (only if not skipped)
-        if not skip_face_lora and class_type == "LoraLoader" and "face" in node.get("_meta", {}).get("title", "").lower():
-            node["inputs"]["lora_name"] = face_lora
-            node["inputs"]["strength_model"] = face_lora_strength
-            node["inputs"]["strength_clip"] = face_lora_strength
-
-        # LoRA Loader — Realism LoRA
-        if class_type == "LoraLoader" and "realism" in node.get("_meta", {}).get("title", "").lower():
-            node["inputs"]["strength_model"] = realism_lora_strength
-            node["inputs"]["strength_clip"] = realism_lora_strength
-
-        # IP-Adapter
+        # IP-Adapter strength
         if "ipadapter" in class_type.lower() or "ip_adapter" in class_type.lower():
             if "strength" in node.get("inputs", {}):
                 node["inputs"]["strength"] = ip_adapter_strength
@@ -239,8 +222,7 @@ def build_generate_workflow(params: dict) -> dict:
         # FaceDetailer
         if class_type == "FaceDetailer":
             node["inputs"]["denoise"] = fd_denoise
-            if "guide_size" in node["inputs"]:
-                node["inputs"]["guide_size"] = 512
+            node["inputs"]["seed"] = seed
             if "feather" in node["inputs"]:
                 node["inputs"]["feather"] = fd_feather
 
@@ -248,12 +230,18 @@ def build_generate_workflow(params: dict) -> dict:
 
 
 def build_edit_workflow(params: dict) -> dict:
-    """Build img2img workflow for scene/outfit changes."""
-    wf = load_workflow("img2img-edit")
+    """Build img2img workflow for scene/outfit changes.
+
+    Same Flux 2 node structure as generate, but:
+      - LoadImage → VAEEncode replaces EmptySD3LatentImage
+      - BasicScheduler denoise < 1.0 (default 0.6)
+      - FaceDetailer included
+    """
+    wf = load_workflow("img2img-flux2")
 
     prompt = params.get("prompt", "")
-    negative = params.get("negative_prompt", "blurry, deformed, cartoon, anime")
     denoise = params.get("denoise", 0.6)
+    steps = params.get("steps", 28)
     seed = params.get("seed", -1)
     if seed == -1:
         seed = int(time.time() * 1000) % (2**32)
@@ -262,7 +250,7 @@ def build_edit_workflow(params: dict) -> dict:
     face_lora_strength = params.get("face_lora_strength", 0.0)
     skip_face_lora = not face_lora or face_lora_strength == 0.0
 
-    # Upload input image to ComfyUI (LoadImage reads from ComfyUI input dir, not /tmp/)
+    # Upload input image to ComfyUI
     input_image_b64 = params.get("input_image", "")
     input_filename = None
     if input_image_b64:
@@ -271,58 +259,63 @@ def build_edit_workflow(params: dict) -> dict:
     if not input_filename:
         raise ValueError("input_image is required for edit action")
 
-    # Skip face LoRA node if not provided
-    if skip_face_lora:
-        face_lora_node_id = None
-        face_lora_model_src = None
-        face_lora_clip_src = None
+    # ── Inject Face LoRA node if provided ──
+    if not skip_face_lora:
+        wf["1b"] = {
+            "class_type": "LoraLoaderModelOnly",
+            "inputs": {
+                "model": ["1", 0],
+                "lora_name": face_lora,
+                "strength_model": face_lora_strength,
+            },
+            "_meta": {"title": "Face LoRA (Model Only)"},
+        }
         for node_id, node in wf.items():
-            if node.get("class_type") == "LoraLoader" and "face" in node.get("_meta", {}).get("title", "").lower():
-                face_lora_node_id = node_id
-                face_lora_model_src = node["inputs"].get("model")
-                face_lora_clip_src = node["inputs"].get("clip")
-                break
-        if face_lora_node_id:
-            del wf[face_lora_node_id]
-            for node_id, node in wf.items():
-                inputs = node.get("inputs", {})
-                for key, val in inputs.items():
-                    if isinstance(val, list) and len(val) == 2 and val[0] == face_lora_node_id:
-                        if val[1] == 0 and face_lora_model_src:
-                            inputs[key] = face_lora_model_src
-                        elif val[1] == 1 and face_lora_clip_src:
-                            inputs[key] = face_lora_clip_src
+            if node_id == "1b":
+                continue
+            inputs = node.get("inputs", {})
+            for key, val in inputs.items():
+                if isinstance(val, list) and len(val) == 2 and val[0] == "1" and val[1] == 0:
+                    inputs[key] = ["1b", 0]
 
+    # ── Apply parameters to workflow nodes ──
     for node_id, node in wf.items():
         class_type = node.get("class_type", "")
 
+        # CLIPTextEncode — positive prompt
         if class_type == "CLIPTextEncode" and "positive" in node.get("_meta", {}).get("title", "").lower():
             node["inputs"]["text"] = prompt
 
-        if class_type == "CLIPTextEncode" and "negative" in node.get("_meta", {}).get("title", "").lower():
-            node["inputs"]["text"] = negative
+        # RandomNoise — seed
+        if class_type == "RandomNoise":
+            node["inputs"]["noise_seed"] = seed
 
-        if class_type in ("KSampler", "KSamplerAdvanced"):
-            node["inputs"]["seed"] = seed
+        # BasicScheduler — steps + denoise
+        if class_type == "BasicScheduler":
+            node["inputs"]["steps"] = steps
             node["inputs"]["denoise"] = denoise
 
+        # LoadImage — input image
         if class_type == "LoadImage":
             node["inputs"]["image"] = input_filename
 
-        if not skip_face_lora and class_type == "LoraLoader" and "face" in node.get("_meta", {}).get("title", "").lower():
-            node["inputs"]["lora_name"] = face_lora
-            node["inputs"]["strength_model"] = face_lora_strength
-            node["inputs"]["strength_clip"] = face_lora_strength
+        # FaceDetailer
+        if class_type == "FaceDetailer":
+            node["inputs"]["seed"] = seed
 
     return wf
 
 
 def build_detailer_workflow(params: dict) -> dict:
-    """Build FaceDetailer + upscale workflow."""
-    wf = load_workflow("face-detailer-upscale")
+    """Build FaceDetailer + upscale workflow.
+
+    Node structure:
+      1 UnetLoaderGGUF → 9 FaceDetailer
+      4 LoadImage → 9 FaceDetailer → 11 ImageUpscaleWithModel → 12 ImageScaleBy → 13 SaveImage
+    """
+    wf = load_workflow("detailer-upscale-flux2")
 
     fd_denoise = params.get("face_detailer_denoise", 0.42)
-    # scale_by is applied AFTER 4x-UltraSharp: 0.5 = net 2x, 1.0 = net 4x
     scale_by = params.get("scale_by", 0.5)
     seed = params.get("seed", -1)
     if seed == -1:
@@ -355,7 +348,7 @@ def build_detailer_workflow(params: dict) -> dict:
 
 
 # ──────────────────────────────────────────────
-# IP-Adapter reference image upload
+# Image upload helper
 # ──────────────────────────────────────────────
 
 def upload_reference_image(image_b64: str) -> str:
@@ -393,11 +386,12 @@ def handler(event: dict) -> dict:
         debug_log(f"Params: prompt={params.get('prompt', '')[:80]}...")
 
         # Debug: check model directories
-        for d in ["/runpod-volume/models/ultralytics",
-                  "/runpod-volume/models/ultralytics/bbox",
+        for d in ["/runpod-volume/models/text_encoders",
                   "/runpod-volume/models/unet",
+                  "/runpod-volume/models/vae",
                   "/runpod-volume/models/loras",
-                  "/runpod-volume/models/sams"]:
+                  "/runpod-volume/models/sams",
+                  "/runpod-volume/models/ultralytics/bbox"]:
             if os.path.isdir(d):
                 files = os.listdir(d)
                 debug_log(f"DIR {d}: {files}")
@@ -410,23 +404,15 @@ def handler(event: dict) -> dict:
             with open(yaml_path) as f:
                 debug_log(f"extra_model_paths.yaml:\n{f.read()}")
 
-        # Debug: ask ComfyUI what models it sees (object_info for UltralyticsDetectorProvider)
-        try:
-            resp = urllib.request.urlopen(f"{COMFYUI_URL}/object_info/UltralyticsDetectorProvider", timeout=10)
-            info = json.loads(resp.read())
-            model_list = info.get("UltralyticsDetectorProvider", {}).get("input", {}).get("required", {}).get("model_name", [])
-            debug_log(f"ComfyUI UltralyticsDetectorProvider models: {model_list}")
-        except Exception as e:
-            debug_log(f"Could not query UltralyticsDetectorProvider: {e}")
-
-        # Debug: check what unet models ComfyUI sees
-        try:
-            resp = urllib.request.urlopen(f"{COMFYUI_URL}/object_info/UnetLoaderGGUF", timeout=10)
-            info = json.loads(resp.read())
-            unet_list = info.get("UnetLoaderGGUF", {}).get("input", {}).get("required", {}).get("unet_name", [])
-            debug_log(f"ComfyUI UnetLoaderGGUF models: {unet_list}")
-        except Exception as e:
-            debug_log(f"Could not query UnetLoaderGGUF: {e}")
+        # Debug: ask ComfyUI what models it sees
+        for node_type in ["UnetLoaderGGUF", "CLIPLoader", "VAELoader"]:
+            try:
+                resp = urllib.request.urlopen(f"{COMFYUI_URL}/object_info/{node_type}", timeout=10)
+                info = json.loads(resp.read())
+                first_input = list(info.get(node_type, {}).get("input", {}).get("required", {}).values())
+                debug_log(f"ComfyUI {node_type} available: {first_input[0] if first_input else 'N/A'}")
+            except Exception as e:
+                debug_log(f"Could not query {node_type}: {e}")
 
         # Upload reference image for IP-Adapter if provided
         ref_image_b64 = params.get("reference_image")
@@ -448,7 +434,7 @@ def handler(event: dict) -> dict:
         # Debug: log key workflow nodes
         for node_id, node in workflow.items():
             ct = node.get("class_type", "")
-            if any(k in ct.lower() for k in ["ultralytics", "unet", "lora", "clip", "vae", "sam"]):
+            if any(k in ct.lower() for k in ["unet", "clip", "vae", "lora", "sam", "ultralytics", "guider", "scheduler", "sampler"]):
                 debug_log(f"Node {node_id} ({ct}): {json.dumps(node.get('inputs', {}))[:200]}")
 
         # Inject reference image filename into IP-Adapter nodes

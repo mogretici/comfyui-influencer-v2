@@ -4,67 +4,52 @@
     "inputs": {
       "unet_name": "flux2-dev-Q5_K_M.gguf"
     },
-    "_meta": {
-      "title": "Load Flux 2 Dev GGUF"
-    }
+    "_meta": { "title": "UNet Loader GGUF" }
   },
   "2": {
-    "class_type": "DualCLIPLoader",
+    "class_type": "CLIPLoader",
     "inputs": {
-      "clip_name1": "t5xxl_fp8.safetensors",
-      "clip_name2": "clip_l.safetensors",
-      "type": "flux"
+      "clip_name": "mistral_3_small_flux2_fp8.safetensors",
+      "type": "flux2"
     },
-    "_meta": {
-      "title": "Load CLIP Encoders"
-    }
+    "_meta": { "title": "CLIP Loader (Mistral 3)" }
   },
   "3": {
     "class_type": "VAELoader",
     "inputs": {
-      "vae_name": "flux-ae.safetensors"
+      "vae_name": "flux2-vae.safetensors"
     },
-    "_meta": {
-      "title": "Load VAE"
-    }
+    "_meta": { "title": "VAE Loader" }
   },
   "4": {
     "class_type": "LoadImage",
     "inputs": {
       "image": "input.png"
     },
-    "_meta": {
-      "title": "Load Input Image"
-    }
+    "_meta": { "title": "Load Input Image" }
   },
   "5": {
     "class_type": "CLIPTextEncode",
     "inputs": {
-      "text": "A detailed photo of a beautiful woman, sharp focus, high resolution, professional photography",
+      "text": "high quality, detailed face, sharp focus, professional photo",
       "clip": ["2", 0]
     },
-    "_meta": {
-      "title": "CLIP Positive Prompt"
-    }
+    "_meta": { "title": "CLIP Text Encode — Positive" }
   },
   "6": {
     "class_type": "CLIPTextEncode",
     "inputs": {
-      "text": "blurry, deformed, low quality, pixelated, artifact",
+      "text": "",
       "clip": ["2", 0]
     },
-    "_meta": {
-      "title": "CLIP Negative Prompt"
-    }
+    "_meta": { "title": "CLIP Text Encode — Negative" }
   },
   "7": {
     "class_type": "UltralyticsDetectorProvider",
     "inputs": {
-      "model_name": "bbox/face_yolov8m.pt"
+      "model_name": "face_yolov8m.pt"
     },
-    "_meta": {
-      "title": "Face Detector — YOLOv8m"
-    }
+    "_meta": { "title": "Face Detection (YOLO)" }
   },
   "8": {
     "class_type": "SAMLoader",
@@ -72,9 +57,7 @@
       "model_name": "sam_vit_b_01ec64.pth",
       "device_mode": "AUTO"
     },
-    "_meta": {
-      "title": "SAM Loader — MobileSAM"
-    }
+    "_meta": { "title": "SAM Loader" }
   },
   "9": {
     "class_type": "FaceDetailer",
@@ -87,15 +70,15 @@
       "negative": ["6", 0],
       "bbox_detector": ["7", 0],
       "sam_model_opt": ["8", 0],
-      "guide_size": 512,
-      "guide_size_for": true,
-      "max_size": 1024,
       "seed": 42,
       "steps": 20,
       "cfg": 1.0,
-      "sampler_name": "euler",
-      "scheduler": "beta",
       "denoise": 0.42,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "guide_size": 512,
+      "guide_size_for": true,
+      "max_size": 1024,
       "feather": 20,
       "noise_mask": true,
       "force_inpaint": true,
@@ -112,18 +95,14 @@
       "wildcard": "",
       "cycle": 1
     },
-    "_meta": {
-      "title": "FaceDetailer — Enhance Face"
-    }
+    "_meta": { "title": "FaceDetailer" }
   },
   "10": {
     "class_type": "UpscaleModelLoader",
     "inputs": {
       "model_name": "4x-UltraSharp.pth"
     },
-    "_meta": {
-      "title": "Load 4x-UltraSharp"
-    }
+    "_meta": { "title": "Upscale Model Loader" }
   },
   "11": {
     "class_type": "ImageUpscaleWithModel",
@@ -131,9 +110,7 @@
       "upscale_model": ["10", 0],
       "image": ["9", 0]
     },
-    "_meta": {
-      "title": "Upscale 4x"
-    }
+    "_meta": { "title": "Image Upscale With Model" }
   },
   "12": {
     "class_type": "ImageScaleBy",
@@ -142,18 +119,14 @@
       "upscale_method": "lanczos",
       "scale_by": 0.5
     },
-    "_meta": {
-      "title": "Scale Down to 2x (4K output)"
-    }
+    "_meta": { "title": "Image Scale By (net 2x)" }
   },
   "13": {
     "class_type": "SaveImage",
     "inputs": {
       "images": ["12", 0],
-      "filename_prefix": "influencer_4k"
+      "filename_prefix": "flux2_detail"
     },
-    "_meta": {
-      "title": "Save 4K Image"
-    }
+    "_meta": { "title": "Save Image" }
   }
 }
