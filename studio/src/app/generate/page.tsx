@@ -35,6 +35,8 @@ import {
   Type,
   User,
   Image,
+  Upload,
+  X,
 } from "lucide-react";
 import {
   useSettingsStore,
@@ -172,6 +174,29 @@ export default function GeneratePage() {
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [resultSeed, setResultSeed] = useState<number | null>(null);
 
+  // Reference image for IP-Adapter
+  const [referenceImage, setReferenceImage] = useState<string | null>(null);
+  const [referencePreview, setReferencePreview] = useState<string | null>(null);
+
+  const handleReferenceUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setReferencePreview(dataUrl);
+      // Strip data URL prefix to get pure base64
+      const base64 = dataUrl.split(",")[1];
+      setReferenceImage(base64);
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
+  const clearReference = useCallback(() => {
+    setReferenceImage(null);
+    setReferencePreview(null);
+  }, []);
+
   // When quality level changes, update all params (unless in advanced mode)
   const handleQualityChange = useCallback(
     (level: QualityLevel) => {
@@ -237,6 +262,7 @@ export default function GeneratePage() {
         height,
         seed,
         face_detailer_denoise: faceDetailerDenoise,
+        ...(referenceImage ? { reference_image: referenceImage } : {}),
       };
 
       const result = await client.runAndWait(params, (status) => {
@@ -275,7 +301,7 @@ export default function GeneratePage() {
   }, [
     isConfigured, prompt, faceLora, faceLoraStrength,
     ipAdapterStrength, steps, width, height,
-    seed, faceDetailerDenoise, settings, setGenerating, setProgress, addImage,
+    seed, faceDetailerDenoise, referenceImage, settings, setGenerating, setProgress, addImage,
   ]);
 
   return (
@@ -407,10 +433,52 @@ export default function GeneratePage() {
             </Card>
           </div>
 
+          {/* Reference Image for IP-Adapter */}
+          <div className="space-y-2">
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
+              3. {t("referenceImage") ?? "Referans Foto"}
+            </h3>
+            <Card className="glass-card overflow-hidden">
+              <CardContent className="p-4">
+                {referencePreview ? (
+                  <div className="relative">
+                    <img
+                      src={referencePreview}
+                      alt="Reference"
+                      className="h-32 w-32 rounded-lg object-cover"
+                    />
+                    <button
+                      onClick={clearReference}
+                      className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-sm"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                    <p className="mt-2 text-[10px] text-muted-foreground/50">
+                      {t("referenceHint") ?? "IP-Adapter yuz tutarliligi icin kullanilir"}
+                    </p>
+                  </div>
+                ) : (
+                  <label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed border-primary/20 bg-primary/[0.02] p-6 transition-colors hover:border-primary/40 hover:bg-primary/5">
+                    <Upload className="h-6 w-6 text-primary/40" />
+                    <span className="text-xs text-muted-foreground/60">
+                      {t("referenceUpload") ?? "Referans fotograf yukle (opsiyonel)"}
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleReferenceUpload}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Quality Selector */}
           <div className="space-y-2">
             <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
-              3. {t("qualityLabel")}
+              4. {t("qualityLabel")}
             </h3>
             <div className="grid grid-cols-3 gap-2">
               {QUALITY_PRESETS.map((preset) => (

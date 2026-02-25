@@ -13,6 +13,7 @@ network_volume:
     ultralytics: ultralytics
     ultralytics_bbox: ultralytics/bbox
     ultralytics_segm: ultralytics/segm
+    clip_vision: clip_vision
 
 xlabs:
     base_path: /runpod-volume/models/xlabs

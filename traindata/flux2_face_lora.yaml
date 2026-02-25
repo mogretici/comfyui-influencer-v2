@@ -1,0 +1,65 @@
+# AI-Toolkit (Ostris) — Flux 2 Dev LoRA Training Config
+# Run on RunPod A40 (48GB VRAM) for ~$0.30-1/training
+#
+# Usage:
+#   pip install ai-toolkit
+#   ai-toolkit train --config traindata/flux2_face_lora.yaml
+
+job: extension
+config:
+  name: mgnperson_flux2_lora_v2
+  process:
+    - type: sd_trainer
+      training_folder: output/mgnperson_flux2_v2
+      device: cuda:0
+      trigger_word: MGNPERSON
+
+      network:
+        type: lora
+        linear: 32          # LoRA rank (higher = more capacity)
+        linear_alpha: 32    # alpha = rank for stable training
+
+      save:
+        dtype: float16
+        save_every: 250
+        max_step_saves_to_keep: 3
+
+      datasets:
+        - folder_path: traindata/images
+          caption_ext: txt
+          caption_dropout_rate: 0.05
+          shuffle_tokens: false
+          cache_latents_to_disk: true
+          resolution:
+            - 512
+            - 768
+            - 1024
+
+      train:
+        batch_size: 4
+        steps: 1500
+        gradient_accumulation_steps: 1
+        train_unet: true
+        train_text_encoder: false
+        gradient_checkpointing: true
+        noise_scheduler: flowmatch
+        optimizer: adamw8bit
+        lr: 1e-4
+        lr_scheduler: cosine
+        lr_scheduler_params:
+          T_max: 1500
+
+      model:
+        name_or_path: black-forest-labs/FLUX.2-dev
+        is_flux: true
+        quantize: true     # fp8 base model for memory efficiency
+
+      sample:
+        sampler: flowmatch
+        sample_every: 250
+        width: 1024
+        height: 1024
+        prompts:
+          - "A photorealistic close-up portrait of MGNPERSON, a young Turkish woman with dark brown wavy bob-length hair and warm brown eyes, wearing a cream knit sweater, soft smile, natural window light, shallow depth of field, clean background"
+          - "A photorealistic full body photograph of MGNPERSON, a young Turkish woman, wearing a black leather jacket and blue jeans, confident pose, urban street background, golden hour light"
+          - "A photorealistic portrait of MGNPERSON, a young Turkish woman with dark brown wavy hair, laughing genuinely with eyes crinkled, wearing a white blouse, soft studio lighting"

@@ -20,7 +20,7 @@ interface SettingsState {
 const DEFAULT_SETTINGS: StudioSettings = {
   runpod_api_key: process.env.NEXT_PUBLIC_RUNPOD_API_KEY ?? "",
   runpod_endpoint_id: process.env.NEXT_PUBLIC_RUNPOD_ENDPOINT_ID ?? "",
-  default_face_lora: "my_face.safetensors",
+  default_face_lora: "mgnperson_flux2.safetensors",
   default_face_lora_strength: 0.9,
   default_ip_adapter_strength: 0.5,
   default_steps: 28,

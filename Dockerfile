@@ -72,6 +72,10 @@ RUN cd /comfyui/custom_nodes && \
 RUN cd /comfyui/custom_nodes && \
     git clone --depth 1 https://github.com/linhoi/ComfyUI-ACE_Plus.git
 
+# 5.6 GGUF-aware LoRA loader (fixes silent LoRA failure with GGUF quantized models)
+RUN cd /comfyui/custom_nodes && \
+    git clone --depth 1 https://github.com/Repeerc/ComfyUI-GGUF-LoRA-Load.git
+
 # Models are downloaded at runtime to Network Volume — not baked into image
 # See src/download-models.sh for the model download logic
 

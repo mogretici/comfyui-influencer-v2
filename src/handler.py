@@ -11,7 +11,7 @@ Flux 2 Architecture:
   - Text Encoder: CLIPLoader (Mistral 3 Small FP8, type: flux2)
   - VAE: VAELoader (flux2-vae.safetensors)
   - Sampling: SamplerCustomAdvanced + BasicGuider (no negative prompt for main sampler)
-  - LoRA: LoraLoaderModelOnly (model only, no clip)
+  - LoRA: UnetGGUFLora (GGUF-aware LoRA loader, model only)
 """
 
 import json
@@ -143,8 +143,13 @@ def build_generate_workflow(params: dict) -> dict:
       9  EmptySD3LatentImage → 10
       10 SamplerCustomAdvanced → 11 VAEDecode → 15 FaceDetailer → 16 SaveImage
 
-    Face LoRA (optional):
-      1b LoraLoaderModelOnly → model replaces node 1 output in guider/scheduler/facedetailer
+    Face LoRA (optional, GGUF-aware):
+      1b UnetGGUFLora → model replaces node 1 output in guider/scheduler/facedetailer
+
+    IP-Adapter (optional, requires reference_image):
+      20 LoadImage (ref) → 22 ApplyFluxIPAdapter
+      21 LoadFluxIPAdapter → 22
+      22 ApplyFluxIPAdapter → replaces model source for downstream nodes
     """
     wf = load_workflow("txt2img-flux2")
 
@@ -189,17 +194,16 @@ def build_generate_workflow(params: dict) -> dict:
     fd_denoise = params.get("face_detailer_denoise", 0.35)
     fd_feather = params.get("face_feather", 15)
 
-    # ── Inject Face LoRA node if provided ──
+    # ── Inject Face LoRA node if provided (GGUF-aware) ──
     if not skip_face_lora:
-        # Add LoraLoaderModelOnly node as "1b"
         wf["1b"] = {
-            "class_type": "LoraLoaderModelOnly",
+            "class_type": "UnetGGUFLora",
             "inputs": {
-                "model": ["1", 0],
+                "unet_model": ["1", 0],
                 "lora_name": face_lora,
                 "strength_model": face_lora_strength,
             },
-            "_meta": {"title": "Face LoRA (Model Only)"},
+            "_meta": {"title": "Face LoRA (GGUF)"},
         }
         # Rewire: all nodes that reference model from "1" should now use "1b"
         for node_id, node in wf.items():
@@ -209,6 +213,49 @@ def build_generate_workflow(params: dict) -> dict:
             for key, val in inputs.items():
                 if isinstance(val, list) and len(val) == 2 and val[0] == "1" and val[1] == 0:
                     inputs[key] = ["1b", 0]
+
+    # ── Inject IP-Adapter nodes if reference image provided ──
+    ref_filename = params.get("_ref_filename")
+    if ref_filename and ip_adapter_strength > 0:
+        # Determine model source: "1b" if LoRA active, "1" if not
+        model_source = "1b" if not skip_face_lora else "1"
+
+        # LoadImage for reference photo
+        wf["20"] = {
+            "class_type": "LoadImage",
+            "inputs": {"image": ref_filename},
+            "_meta": {"title": "Reference Image (IP-Adapter)"},
+        }
+        # LoadFluxIPAdapter (loads IP-Adapter weights + CLIP vision)
+        wf["21"] = {
+            "class_type": "LoadFluxIPAdapter",
+            "inputs": {
+                "ipadatper": "flux-ip-adapter-v2.safetensors",
+                "clip_vision": "clip_vision_l.safetensors",
+                "provider": "GPU",
+            },
+            "_meta": {"title": "Load IP-Adapter Flux"},
+        }
+        # ApplyFluxIPAdapter — inject into model chain
+        wf["22"] = {
+            "class_type": "ApplyFluxIPAdapter",
+            "inputs": {
+                "model": [model_source, 0],
+                "ip_adapter_flux": ["21", 0],
+                "image": ["20", 0],
+                "ip_scale": ip_adapter_strength,
+            },
+            "_meta": {"title": "Apply IP-Adapter"},
+        }
+        # Rewire downstream nodes from model_source to "22"
+        for node_id, node in wf.items():
+            if node_id in ("1b", "20", "21", "22"):
+                continue
+            inputs = node.get("inputs", {})
+            for key, val in inputs.items():
+                if isinstance(val, list) and len(val) == 2 and val[0] == model_source and val[1] == 0:
+                    inputs[key] = ["22", 0]
+        debug_log(f"IP-Adapter injected: ref={ref_filename}, scale={ip_adapter_strength}, model_source={model_source}")
 
     # ── Apply parameters to workflow nodes ──
     for node_id, node in wf.items():
@@ -286,16 +333,16 @@ def build_edit_workflow(params: dict) -> dict:
     if not input_filename:
         raise ValueError("input_image is required for edit action")
 
-    # ── Inject Face LoRA node if provided ──
+    # ── Inject Face LoRA node if provided (GGUF-aware) ──
     if not skip_face_lora:
         wf["1b"] = {
-            "class_type": "LoraLoaderModelOnly",
+            "class_type": "UnetGGUFLora",
             "inputs": {
-                "model": ["1", 0],
+                "unet_model": ["1", 0],
                 "lora_name": face_lora,
                 "strength_model": face_lora_strength,
             },
-            "_meta": {"title": "Face LoRA (Model Only)"},
+            "_meta": {"title": "Face LoRA (GGUF)"},
         }
         for node_id, node in wf.items():
             if node_id == "1b":
@@ -446,7 +493,35 @@ def handler(event: dict) -> dict:
         ref_filename = None
         if ref_image_b64:
             ref_filename = upload_reference_image(ref_image_b64)
+            params["_ref_filename"] = ref_filename
             debug_log(f"Uploaded reference image: {ref_filename}")
+
+        # Utility action: download a LoRA file to the volume
+        if action == "download_lora":
+            lora_url = params.get("lora_url", "")
+            lora_name = params.get("lora_name", "my_face.safetensors")
+            if not lora_url:
+                return {"error": "lora_url is required"}
+            lora_dir = "/runpod-volume/models/loras"
+            os.makedirs(lora_dir, exist_ok=True)
+            dest = os.path.join(lora_dir, lora_name)
+            debug_log(f"Downloading LoRA: {lora_url} -> {dest}")
+            try:
+                req = urllib.request.Request(lora_url, headers={"User-Agent": "Mozilla/5.0"})
+                with urllib.request.urlopen(req, timeout=600) as resp, open(dest, "wb") as f:
+                    total = 0
+                    while True:
+                        chunk = resp.read(131072)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+                        total += len(chunk)
+                size_mb = os.path.getsize(dest) / (1024 * 1024)
+                debug_log(f"LoRA downloaded: {dest} ({size_mb:.1f} MB)")
+                return {"status": "ok", "path": dest, "size_mb": round(size_mb, 1)}
+            except Exception as e:
+                debug_log(f"LoRA download failed: {e}")
+                return {"error": f"Download failed: {str(e)}"}
 
         # Build workflow based on action
         if action == "generate":
@@ -461,15 +536,11 @@ def handler(event: dict) -> dict:
         # Debug: log key workflow nodes
         for node_id, node in workflow.items():
             ct = node.get("class_type", "")
-            if any(k in ct.lower() for k in ["unet", "clip", "vae", "lora", "sam", "ultralytics", "guider", "scheduler", "sampler"]):
+            if any(k in ct.lower() for k in ["unet", "clip", "vae", "lora", "sam", "ultralytics", "guider", "scheduler", "sampler", "ipadapter", "ip_adapter"]):
                 debug_log(f"Node {node_id} ({ct}): {json.dumps(node.get('inputs', {}))[:200]}")
 
-        # Inject reference image filename into IP-Adapter nodes
-        if ref_filename:
-            for node_id, node in workflow.items():
-                class_type = node.get("class_type", "")
-                if class_type == "LoadImage" and "reference" in node.get("_meta", {}).get("title", "").lower():
-                    node["inputs"]["image"] = ref_filename
+        # Note: IP-Adapter reference image injection is now handled inside build_generate_workflow()
+        # via params["_ref_filename"] — no need for post-hoc LoadImage search
 
         # Queue and wait
         debug_log("Queueing workflow...")

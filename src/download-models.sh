@@ -82,7 +82,12 @@ download "$MODELS_DIR/sams/sam_vit_b_01ec64.pth" \
     "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth" \
     "SAM ViT-B"
 
-# 7. 4x-UltraSharp Upscaler (~65MB)
+# 7. CLIP Vision for IP-Adapter (~1.7GB)
+download "$MODELS_DIR/clip_vision/clip_vision_l.safetensors" \
+    "https://huggingface.co/XLabs-AI/flux-ip-adapter/resolve/main/clip_vision_l.safetensors" \
+    "CLIP Vision ViT-L (IP-Adapter)"
+
+# 8. 4x-UltraSharp Upscaler (~65MB)
 download "$MODELS_DIR/upscale_models/4x-UltraSharp.pth" \
     "https://huggingface.co/lokCX/4x-Ultrasharp/resolve/main/4x-UltraSharp.pth" \
     "4x-UltraSharp Upscaler"
