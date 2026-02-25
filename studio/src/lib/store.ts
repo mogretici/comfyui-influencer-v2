@@ -18,15 +18,15 @@ interface SettingsState {
 }
 
 const DEFAULT_SETTINGS: StudioSettings = {
-  runpod_api_key: "",
-  runpod_endpoint_id: "",
+  runpod_api_key: process.env.NEXT_PUBLIC_RUNPOD_API_KEY ?? "",
+  runpod_endpoint_id: process.env.NEXT_PUBLIC_RUNPOD_ENDPOINT_ID ?? "",
   default_face_lora: "my_face.safetensors",
   default_face_lora_strength: 0.9,
   default_ip_adapter_strength: 0.5,
   default_steps: 28,
   default_width: 1024,
   default_height: 1024,
-  default_face_detailer_denoise: 0.42,
+  default_face_detailer_denoise: 0.35,
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -44,7 +44,35 @@ export const useSettingsStore = create<SettingsState>()(
         return runpod_api_key.length > 0 && runpod_endpoint_id.length > 0;
       },
     }),
-    { name: "studio-settings" }
+    {
+      name: "studio-settings",
+      merge: (persisted, current) => {
+        const state = {
+          ...current,
+          ...(persisted as Partial<SettingsState>),
+        };
+        // Fill empty API credentials from env vars
+        if (
+          !state.settings.runpod_api_key &&
+          DEFAULT_SETTINGS.runpod_api_key
+        ) {
+          state.settings = {
+            ...state.settings,
+            runpod_api_key: DEFAULT_SETTINGS.runpod_api_key,
+          };
+        }
+        if (
+          !state.settings.runpod_endpoint_id &&
+          DEFAULT_SETTINGS.runpod_endpoint_id
+        ) {
+          state.settings = {
+            ...state.settings,
+            runpod_endpoint_id: DEFAULT_SETTINGS.runpod_endpoint_id,
+          };
+        }
+        return state;
+      },
+    }
   )
 );
 

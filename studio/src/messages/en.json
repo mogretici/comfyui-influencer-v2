@@ -145,7 +145,21 @@
     "successGenerated": "Image generated successfully!",
     "noImageReturned": "No image returned",
     "previewPanel": "Preview",
-    "previewHint": "Generated image will appear here"
+    "previewHint": "Generated image will appear here",
+    "characterPresets": "Character Training",
+    "scenesTab": "Scenes",
+    "characterTab": "Character",
+    "characterPresetsHint": "Generate character photos with different angles and expressions for LoRA training",
+    "charPreset": {
+      "front-closeup": "Front Close-up",
+      "three-quarter-left": "3/4 Left",
+      "three-quarter-right": "3/4 Right",
+      "profile-side": "Profile",
+      "full-body": "Full Body",
+      "golden-hour": "Golden Hour",
+      "expressive-smile": "Smiling",
+      "serious-look": "Serious Look"
+    }
   },
   "editor": {
     "heading": "Editing Suite",
@@ -520,5 +534,41 @@
     "noImage": "Please upload an image.",
     "generationFailed": "Image generation failed.",
     "unknown": "An unexpected error occurred."
+  },
+  "characterPresets": {
+    "sectionTitle": "Character Training Data",
+    "sectionDescription": "Different angles and expressions for LoRA training",
+    "frontCloseup": {
+      "name": "Front Close-up",
+      "description": "Direct gaze, close-up"
+    },
+    "threeQuarterLeft": {
+      "name": "3/4 Left",
+      "description": "3/4 angle, facing left"
+    },
+    "threeQuarterRight": {
+      "name": "3/4 Right",
+      "description": "3/4 angle, facing right"
+    },
+    "profileSide": {
+      "name": "Profile",
+      "description": "Side profile shot"
+    },
+    "fullBody": {
+      "name": "Full Body",
+      "description": "Head-to-toe full body"
+    },
+    "goldenHour": {
+      "name": "Golden Hour",
+      "description": "Warm sunset lighting"
+    },
+    "expressiveSmile": {
+      "name": "Smiling",
+      "description": "Natural genuine smile"
+    },
+    "seriousLook": {
+      "name": "Serious Look",
+      "description": "Dramatic lighting"
+    }
   }
 }

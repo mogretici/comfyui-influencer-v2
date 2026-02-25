@@ -1,5 +1,99 @@
 import type { ScenePreset } from "@/types";
 
+// ─── Character Training Presets ─────────────────────────
+// Optimized for LoRA training: different angles, lighting, expressions
+// Each generates ideal training data for face consistency
+
+export interface CharacterPreset {
+  id: string;
+  nameKey: string;
+  descriptionKey: string;
+  icon: string;
+  prompt_template: string;
+  recommended_params?: {
+    width?: number;
+    height?: number;
+    steps?: number;
+  };
+}
+
+export const CHARACTER_PRESETS: CharacterPreset[] = [
+  {
+    id: "front-closeup",
+    nameKey: "characterPresets.frontCloseup.name",
+    descriptionKey: "characterPresets.frontCloseup.description",
+    icon: "🎯",
+    prompt_template:
+      "Close-up portrait photograph of {trigger}, looking directly at camera, neutral expression, front-facing symmetrical pose. Shot on Canon EOS R5, 85mm f/1.4 lens, soft natural window light from the left, shallow depth of field. Visible skin texture, pores, subtle imperfections. Clean neutral background, no makeup, hair pulled back. Professional headshot, photorealistic, 8k",
+    recommended_params: { width: 1024, height: 1024, steps: 35 },
+  },
+  {
+    id: "three-quarter-left",
+    nameKey: "characterPresets.threeQuarterLeft.name",
+    descriptionKey: "characterPresets.threeQuarterLeft.description",
+    icon: "↩️",
+    prompt_template:
+      "Portrait photograph of {trigger}, three-quarter view facing left, slight natural smile, relaxed shoulders. Shot on Canon EOS R5, 85mm f/1.4 lens, diffused studio light with fill light, shallow depth of field. Visible skin texture and natural complexion. Clean neutral background, minimal makeup, natural hair. Professional portrait, photorealistic, 8k",
+    recommended_params: { width: 1024, height: 1024, steps: 35 },
+  },
+  {
+    id: "three-quarter-right",
+    nameKey: "characterPresets.threeQuarterRight.name",
+    descriptionKey: "characterPresets.threeQuarterRight.description",
+    icon: "↪️",
+    prompt_template:
+      "Portrait photograph of {trigger}, three-quarter view facing right, subtle smile, relaxed expression. Shot on Canon EOS R5, 85mm f/1.4 lens, soft Rembrandt lighting from right side, shallow depth of field. Natural skin texture and realistic complexion. Clean neutral background, minimal makeup, natural hair. Professional portrait, photorealistic, 8k",
+    recommended_params: { width: 1024, height: 1024, steps: 35 },
+  },
+  {
+    id: "profile-side",
+    nameKey: "characterPresets.profileSide.name",
+    descriptionKey: "characterPresets.profileSide.description",
+    icon: "👤",
+    prompt_template:
+      "Side profile portrait of {trigger}, looking to the left, chin slightly lifted, serene expression. Shot on Canon EOS R5, 85mm f/1.4 lens, rim lighting from behind, clean studio setup. Sharp jawline detail, visible ear, natural skin texture. Clean white background, no makeup, hair tucked behind ear. Professional profile shot, photorealistic, 8k",
+    recommended_params: { width: 1024, height: 1024, steps: 35 },
+  },
+  {
+    id: "full-body",
+    nameKey: "characterPresets.fullBody.name",
+    descriptionKey: "characterPresets.fullBody.description",
+    icon: "🧍‍♀️",
+    prompt_template:
+      "Full body photograph of {trigger}, standing naturally with weight on one leg, hands at sides, looking at camera with confident expression. Wearing simple white t-shirt and blue jeans. Shot on Canon EOS R5, 50mm f/1.8 lens, natural daylight in a studio, full body visible from head to feet. Clean neutral background, natural posture, photorealistic, 8k",
+    recommended_params: { width: 768, height: 1152, steps: 35 },
+  },
+  {
+    id: "golden-hour",
+    nameKey: "characterPresets.goldenHour.name",
+    descriptionKey: "characterPresets.goldenHour.description",
+    icon: "🌅",
+    prompt_template:
+      "Portrait photograph of {trigger}, golden hour warm sunlight, looking at camera with gentle smile, wind slightly moving hair. Shot on Canon EOS R5, 85mm f/1.4 lens, backlit golden hour sun creating warm rim light, lens flare. Natural skin glow, warm tones, visible skin texture. Outdoor blurred background, casual outfit, photorealistic, 8k",
+    recommended_params: { width: 1024, height: 1024, steps: 35 },
+  },
+  {
+    id: "expressive-smile",
+    nameKey: "characterPresets.expressiveSmile.name",
+    descriptionKey: "characterPresets.expressiveSmile.description",
+    icon: "😊",
+    prompt_template:
+      "Close-up portrait of {trigger}, genuine bright smile showing teeth, eyes slightly squinted from smiling, joyful expression. Shot on Canon EOS R5, 85mm f/1.4 lens, soft diffused natural light, shallow depth of field. Laugh lines visible, natural skin texture, bright eyes. Clean soft background, minimal makeup, photorealistic, 8k",
+    recommended_params: { width: 1024, height: 1024, steps: 35 },
+  },
+  {
+    id: "serious-look",
+    nameKey: "characterPresets.seriousLook.name",
+    descriptionKey: "characterPresets.seriousLook.description",
+    icon: "😐",
+    prompt_template:
+      "Portrait photograph of {trigger}, serious contemplative expression, direct intense eye contact, slightly furrowed brow. Shot on Canon EOS R5, 85mm f/1.4 lens, dramatic side lighting with deep shadows, moody atmosphere. Sharp facial details, natural skin texture. Dark clean background, no smile, professional editorial look, photorealistic, 8k",
+    recommended_params: { width: 1024, height: 1024, steps: 35 },
+  },
+];
+
+// ─── Scene Presets ──────────────────────────────────────
+
 export const SCENE_PRESETS: ScenePreset[] = [
   {
     id: "cafe",
@@ -7,7 +101,7 @@ export const SCENE_PRESETS: ScenePreset[] = [
     descriptionKey: "presets.cafe.description",
     icon: "☕",
     prompt_template:
-      "A photo of {trigger} sitting in a cozy cafe, holding a coffee cup, warm ambient lighting, bokeh background, canon eos r5, 85mm f/1.4",
+      "Candid photograph of {trigger} sitting in a cozy cafe, holding a ceramic coffee cup, warm ambient lighting from Edison bulbs overhead. Shot on Canon EOS R5, 85mm f/1.4 lens, shallow depth of field, creamy bokeh background. Visible skin texture, natural complexion, subtle smile. Wearing casual knit sweater, wooden table, steam rising from cup. Photorealistic, 8k",
   },
   {
     id: "beach",
@@ -15,7 +109,7 @@ export const SCENE_PRESETS: ScenePreset[] = [
     descriptionKey: "presets.beach.description",
     icon: "🏖️",
     prompt_template:
-      "A photo of {trigger} at a tropical beach, sunset golden hour lighting, wearing a summer outfit, wind in hair, ocean background, canon eos r5, 85mm f/1.4",
+      "Photograph of {trigger} at a tropical beach during golden hour, warm sunset backlighting creating rim light on hair and skin. Shot on Canon EOS R5, 85mm f/1.4 lens, shallow depth of field. Wind gently moving hair, wearing a light summer dress, bare feet on sand. Natural sun-kissed skin glow, visible skin texture, relaxed genuine expression. Ocean waves blurred in background, photorealistic, 8k",
   },
   {
     id: "gym",
@@ -23,7 +117,7 @@ export const SCENE_PRESETS: ScenePreset[] = [
     descriptionKey: "presets.gym.description",
     icon: "💪",
     prompt_template:
-      "A photo of {trigger} in a modern gym, wearing athletic wear, confident pose, natural lighting from windows, professional fitness photography, canon eos r5, 70-200mm",
+      "Photograph of {trigger} in a modern gym, wearing fitted athletic wear, confident standing pose near weight rack. Shot on Canon EOS R5, 70-200mm f/2.8 lens, natural window light mixed with overhead gym lights. Light perspiration on skin, visible skin texture, determined expression. Clean modern gym background with equipment slightly blurred, photorealistic, 8k",
   },
   {
     id: "street-fashion",
@@ -31,7 +125,7 @@ export const SCENE_PRESETS: ScenePreset[] = [
     descriptionKey: "presets.streetFashion.description",
     icon: "👗",
     prompt_template:
-      "A photo of {trigger} walking on a city street, stylish urban outfit, street fashion photography, golden hour, shallow depth of field, canon eos r5, 50mm f/1.2",
+      "Street fashion photograph of {trigger} walking on a European city street, stylish urban outfit with layers, confident stride. Shot on Canon EOS R5, 50mm f/1.2 lens, golden hour side lighting casting long shadows. Shallow depth of field, blurred architecture background. Natural skin texture, wind-touched hair, candid mid-step pose. Editorial street style, photorealistic, 8k",
   },
   {
     id: "studio-portrait",
@@ -39,7 +133,7 @@ export const SCENE_PRESETS: ScenePreset[] = [
     descriptionKey: "presets.studioPortrait.description",
     icon: "📸",
     prompt_template:
-      "A professional studio portrait of {trigger}, clean white background, studio lighting with softbox, high fashion makeup, sharp focus, canon eos r5, 85mm f/1.4",
+      "Professional studio portrait of {trigger}, clean seamless white background, two-light setup with main softbox and fill. Shot on Canon EOS R5, 85mm f/1.4 lens, sharp focus on eyes. Subtle professional makeup, visible skin pores and texture, confident direct gaze. Hair professionally styled, wearing elegant blouse, high-end editorial look, photorealistic, 8k",
   },
   {
     id: "travel",
@@ -47,7 +141,7 @@ export const SCENE_PRESETS: ScenePreset[] = [
     descriptionKey: "presets.travel.description",
     icon: "✈️",
     prompt_template:
-      "A photo of {trigger} exploring a beautiful European old town, travel photography, natural lighting, carrying a small bag, looking at camera with smile, canon eos r5, 35mm",
+      "Travel photograph of {trigger} in a charming European cobblestone old town, leaning against ancient stone wall, small leather bag over shoulder. Shot on Canon EOS R5, 35mm f/1.4 lens, natural daylight. Looking at camera with warm genuine smile, casual travel outfit. Visible skin texture, natural complexion, slightly windswept hair. Blurred historic buildings in background, photorealistic, 8k",
   },
   {
     id: "restaurant",
@@ -55,7 +149,7 @@ export const SCENE_PRESETS: ScenePreset[] = [
     descriptionKey: "presets.restaurant.description",
     icon: "🍽️",
     prompt_template:
-      "A photo of {trigger} at an upscale restaurant, elegant dining scene, warm candlelight ambiance, dressed elegantly, shallow depth of field, canon eos r5, 50mm f/1.4",
+      "Photograph of {trigger} seated at an upscale restaurant, warm candlelight illuminating face from below, dressed in elegant evening wear. Shot on Canon EOS R5, 50mm f/1.4 lens, shallow depth of field. Soft warm skin tones, visible skin texture, refined subtle smile. Wine glass and plated food slightly blurred on table, dark moody ambient background, photorealistic, 8k",
   },
   {
     id: "nature",
@@ -63,7 +157,7 @@ export const SCENE_PRESETS: ScenePreset[] = [
     descriptionKey: "presets.nature.description",
     icon: "🌿",
     prompt_template:
-      "A photo of {trigger} in a lush green forest, dappled sunlight through trees, casual boho outfit, peaceful expression, nature photography, canon eos r5, 85mm f/1.4",
+      "Photograph of {trigger} in a lush green forest, dappled sunlight filtering through tree canopy creating light spots on face. Shot on Canon EOS R5, 85mm f/1.4 lens, shallow depth of field. Wearing casual boho outfit, peaceful serene expression, natural hair. Visible freckles and skin texture, sun-dappled warm tones, green foliage bokeh background, photorealistic, 8k",
   },
   {
     id: "home",
@@ -71,7 +165,7 @@ export const SCENE_PRESETS: ScenePreset[] = [
     descriptionKey: "presets.home.description",
     icon: "🏠",
     prompt_template:
-      "A photo of {trigger} relaxing at home on a cozy sofa, wearing comfortable casual clothes, warm interior lighting, lifestyle photography, canon eos r5, 35mm f/1.4",
+      "Lifestyle photograph of {trigger} relaxing on a cozy sofa at home, wearing comfortable oversized sweater, holding a book. Shot on Canon EOS R5, 35mm f/1.4 lens, soft warm interior window light. Bare face with visible natural skin texture, relaxed genuine expression, messy casual hair. Warm earth tones, soft pillows and blanket, hygge atmosphere, photorealistic, 8k",
   },
   {
     id: "night-city",
@@ -79,7 +173,7 @@ export const SCENE_PRESETS: ScenePreset[] = [
     descriptionKey: "presets.nightCity.description",
     icon: "🌃",
     prompt_template:
-      "A photo of {trigger} on a city rooftop at night, city lights bokeh background, stylish outfit, moody cinematic lighting, neon reflections, canon eos r5, 50mm f/1.2",
+      "Photograph of {trigger} on a city rooftop at night, colorful city lights creating bokeh background, wearing stylish dark outfit. Shot on Canon EOS R5, 50mm f/1.2 lens, wide open aperture. Neon reflections on skin, moody cinematic color grading, natural skin texture visible under ambient light. Confident pose leaning on railing, wind in hair, photorealistic, 8k",
   },
 ];
 

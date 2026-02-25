@@ -33,6 +33,8 @@ import {
   AlertTriangle,
   ChevronDown,
   Type,
+  User,
+  Image,
 } from "lucide-react";
 import {
   useSettingsStore,
@@ -42,6 +44,7 @@ import {
 import { getRunPodClient, base64ToUrl, downloadBase64Image } from "@/lib/api";
 import {
   SCENE_PRESETS,
+  CHARACTER_PRESETS,
   buildPrompt,
 } from "@/lib/presets";
 import {
@@ -149,6 +152,7 @@ export default function GeneratePage() {
   // Simple mode state
   const [prompt, setPrompt] = useState("");
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+  const [presetMode, setPresetMode] = useState<"scene" | "character">("scene");
   const [qualityLevel, setQualityLevel] = useState<QualityLevel>("balanced");
 
   // Advanced mode toggle
@@ -186,11 +190,21 @@ export default function GeneratePage() {
   );
 
   const handlePresetClick = useCallback((presetId: string) => {
-    const preset = SCENE_PRESETS.find((p) => p.id === presetId);
+    const preset =
+      presetMode === "character"
+        ? CHARACTER_PRESETS.find((p) => p.id === presetId)
+        : SCENE_PRESETS.find((p) => p.id === presetId);
     if (!preset) return;
     setSelectedPreset(presetId);
     setPrompt(buildPrompt(preset.prompt_template, "ohwx woman"));
-  }, []);
+    // Apply recommended params from character presets
+    if (presetMode === "character" && preset.recommended_params) {
+      const rp = preset.recommended_params;
+      if (rp.width) setWidth(rp.width);
+      if (rp.height) setHeight(rp.height);
+      if (rp.steps) setSteps(rp.steps);
+    }
+  }, [presetMode]);
 
   const handleGenerate = useCallback(async () => {
     if (!isConfigured()) {
@@ -283,33 +297,86 @@ export default function GeneratePage() {
       <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
         {/* Left: Controls */}
         <div className="space-y-5">
-          {/* Scene Presets */}
+          {/* Preset Mode Tabs + Grid */}
           <div className="space-y-2">
-            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
-              1. {t("scenePresets")}
-            </h3>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
-              {SCENE_PRESETS.map((preset, i) => (
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
+                1. {presetMode === "scene" ? t("scenePresets") : t("characterPresets")}
+              </h3>
+              <div className="flex gap-1 rounded-lg border border-border/30 bg-card/30 p-0.5">
                 <button
-                  key={preset.id}
-                  onClick={() => handlePresetClick(preset.id)}
-                  className={`group relative flex flex-col items-center gap-1.5 rounded-xl border p-3 transition-all hover:scale-[1.03] ${
-                    selectedPreset === preset.id
-                      ? "border-primary/50 bg-primary/10 glow-sm"
-                      : "border-border/50 bg-card/50 hover:border-primary/30 hover:bg-primary/5"
+                  onClick={() => { setPresetMode("scene"); setSelectedPreset(null); }}
+                  className={`flex items-center gap-1 rounded-md px-2.5 py-1 text-[10px] font-medium transition-all ${
+                    presetMode === "scene"
+                      ? "bg-primary/15 text-primary shadow-sm"
+                      : "text-muted-foreground/50 hover:text-muted-foreground"
                   }`}
                 >
-                  <div
-                    className={`flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br ${PRESET_GRADIENTS[i % PRESET_GRADIENTS.length]} text-white shadow-sm`}
-                  >
-                    <span className="text-sm">{preset.icon}</span>
-                  </div>
-                  <span className="text-[11px] font-medium leading-tight text-center">
-                    {tp(preset.nameKey.replace("presets.", ""))}
-                  </span>
+                  <Image className="h-3 w-3" />
+                  {t("scenesTab")}
                 </button>
-              ))}
+                <button
+                  onClick={() => { setPresetMode("character"); setSelectedPreset(null); }}
+                  className={`flex items-center gap-1 rounded-md px-2.5 py-1 text-[10px] font-medium transition-all ${
+                    presetMode === "character"
+                      ? "bg-primary/15 text-primary shadow-sm"
+                      : "text-muted-foreground/50 hover:text-muted-foreground"
+                  }`}
+                >
+                  <User className="h-3 w-3" />
+                  {t("characterTab")}
+                </button>
+              </div>
             </div>
+
+            {presetMode === "scene" ? (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
+                {SCENE_PRESETS.map((preset, i) => (
+                  <button
+                    key={preset.id}
+                    onClick={() => handlePresetClick(preset.id)}
+                    className={`group relative flex flex-col items-center gap-1.5 rounded-xl border p-3 transition-all hover:scale-[1.03] ${
+                      selectedPreset === preset.id
+                        ? "border-primary/50 bg-primary/10 glow-sm"
+                        : "border-border/50 bg-card/50 hover:border-primary/30 hover:bg-primary/5"
+                    }`}
+                  >
+                    <div
+                      className={`flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br ${PRESET_GRADIENTS[i % PRESET_GRADIENTS.length]} text-white shadow-sm`}
+                    >
+                      <span className="text-sm">{preset.icon}</span>
+                    </div>
+                    <span className="text-[11px] font-medium leading-tight text-center">
+                      {tp(preset.nameKey.replace("presets.", ""))}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-[10px] text-muted-foreground/50">
+                  {t("characterPresetsHint")}
+                </p>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {CHARACTER_PRESETS.map((preset) => (
+                    <button
+                      key={preset.id}
+                      onClick={() => handlePresetClick(preset.id)}
+                      className={`group relative flex flex-col items-center gap-1.5 rounded-xl border p-3 transition-all hover:scale-[1.03] ${
+                        selectedPreset === preset.id
+                          ? "border-primary/50 bg-primary/10 glow-sm"
+                          : "border-border/50 bg-card/50 hover:border-primary/30 hover:bg-primary/5"
+                      }`}
+                    >
+                      <span className="text-lg">{preset.icon}</span>
+                      <span className="text-[11px] font-medium leading-tight text-center">
+                        {t(`charPreset.${preset.id}`)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Prompt */}

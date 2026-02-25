@@ -145,7 +145,21 @@
     "successGenerated": "Görsel başarıyla oluşturuldu!",
     "noImageReturned": "Görsel döndürülmedi",
     "previewPanel": "Ön İzleme",
-    "previewHint": "Oluşturulan görsel burada görünecek"
+    "previewHint": "Oluşturulan görsel burada görünecek",
+    "characterPresets": "Karakter Eğitim",
+    "scenesTab": "Sahneler",
+    "characterTab": "Karakter",
+    "characterPresetsHint": "LoRA eğitimi için farklı açı ve ifadelerle karakter fotoğrafları oluşturun",
+    "charPreset": {
+      "front-closeup": "Ön Yüz",
+      "three-quarter-left": "3/4 Sol",
+      "three-quarter-right": "3/4 Sağ",
+      "profile-side": "Profil",
+      "full-body": "Tam Boy",
+      "golden-hour": "Altın Saat",
+      "expressive-smile": "Gülümseyen",
+      "serious-look": "Ciddi Bakış"
+    }
   },
   "editor": {
     "heading": "Düzenleme Stüdyosu",
@@ -520,5 +534,41 @@
     "noImage": "Lütfen bir görsel yükleyin.",
     "generationFailed": "Görsel oluşturma başarısız oldu.",
     "unknown": "Beklenmeyen bir hata oluştu."
+  },
+  "characterPresets": {
+    "sectionTitle": "Karakter Eğitim Verileri",
+    "sectionDescription": "LoRA eğitimi için farklı açı ve ifadeler",
+    "frontCloseup": {
+      "name": "Ön Yüz",
+      "description": "Düz bakış, yakın çekim"
+    },
+    "threeQuarterLeft": {
+      "name": "3/4 Sol",
+      "description": "3/4 açı, sola dönük"
+    },
+    "threeQuarterRight": {
+      "name": "3/4 Sağ",
+      "description": "3/4 açı, sağa dönük"
+    },
+    "profileSide": {
+      "name": "Profil",
+      "description": "Yan profil çekim"
+    },
+    "fullBody": {
+      "name": "Tam Boy",
+      "description": "Baş-ayak tam vücut"
+    },
+    "goldenHour": {
+      "name": "Altın Saat",
+      "description": "Sıcak gün batımı ışığı"
+    },
+    "expressiveSmile": {
+      "name": "Gülümseyen",
+      "description": "Doğal gülümseme"
+    },
+    "seriousLook": {
+      "name": "Ciddi Bakış",
+      "description": "Dramatik aydınlatma"
+    }
   }
 }

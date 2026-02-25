@@ -163,6 +163,17 @@ def build_generate_workflow(params: dict) -> dict:
     ip_adapter_strength = params.get("ip_adapter_strength", 0.5)
     skip_face_lora = not face_lora or face_lora_strength == 0.0
 
+    # Check if LoRA file actually exists on disk
+    if not skip_face_lora:
+        lora_paths = [
+            f"/runpod-volume/models/loras/{face_lora}",
+            f"/comfyui/models/loras/{face_lora}",
+        ]
+        lora_exists = any(os.path.isfile(p) for p in lora_paths)
+        if not lora_exists:
+            debug_log(f"WARNING: LoRA file '{face_lora}' not found, skipping LoRA injection")
+            skip_face_lora = True
+
     debug_log(f"build_generate: face_lora={face_lora!r}, strength={face_lora_strength}, skip={skip_face_lora}")
     debug_log(f"build_generate: ip_adapter={ip_adapter_strength}")
 
@@ -255,6 +266,16 @@ def build_edit_workflow(params: dict) -> dict:
     face_lora = params.get("face_lora", "")
     face_lora_strength = params.get("face_lora_strength", 0.0)
     skip_face_lora = not face_lora or face_lora_strength == 0.0
+
+    # Check if LoRA file actually exists on disk
+    if not skip_face_lora:
+        lora_paths = [
+            f"/runpod-volume/models/loras/{face_lora}",
+            f"/comfyui/models/loras/{face_lora}",
+        ]
+        if not any(os.path.isfile(p) for p in lora_paths):
+            debug_log(f"WARNING: LoRA file '{face_lora}' not found, skipping LoRA injection")
+            skip_face_lora = True
 
     # Upload input image to ComfyUI
     input_image_b64 = params.get("input_image", "")
