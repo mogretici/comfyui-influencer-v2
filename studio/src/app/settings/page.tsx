@@ -146,14 +146,10 @@ export default function SettingsPage() {
   const [faceLoraStrength, setFaceLoraStrength] = useState(
     settings.default_face_lora_strength
   );
-  const [realismStrength, setRealismStrength] = useState(
-    settings.default_realism_lora_strength
-  );
   const [ipAdapterStrength, setIpAdapterStrength] = useState(
     settings.default_ip_adapter_strength
   );
   const [steps, setSteps] = useState(settings.default_steps);
-  const [cfg, setCfg] = useState(settings.default_cfg);
   const [width, setWidth] = useState(settings.default_width);
   const [height, setHeight] = useState(settings.default_height);
   const [fdDenoise, setFdDenoise] = useState(
@@ -166,10 +162,8 @@ export default function SettingsPage() {
       setQualityLevel(level);
       const preset = getPresetByLevel(level);
       setFaceLoraStrength(preset.params.face_lora_strength);
-      setRealismStrength(preset.params.realism_lora_strength);
       setIpAdapterStrength(preset.params.ip_adapter_strength);
       setSteps(preset.params.steps);
-      setCfg(preset.params.cfg);
       setWidth(preset.params.width);
       setHeight(preset.params.height);
       setFdDenoise(preset.params.face_detailer_denoise);
@@ -183,10 +177,8 @@ export default function SettingsPage() {
       runpod_endpoint_id: endpointId,
       default_face_lora: faceLora,
       default_face_lora_strength: faceLoraStrength,
-      default_realism_lora_strength: realismStrength,
       default_ip_adapter_strength: ipAdapterStrength,
       default_steps: steps,
-      default_cfg: cfg,
       default_width: width,
       default_height: height,
       default_face_detailer_denoise: fdDenoise,
@@ -197,10 +189,8 @@ export default function SettingsPage() {
     endpointId,
     faceLora,
     faceLoraStrength,
-    realismStrength,
     ipAdapterStrength,
     steps,
-    cfg,
     width,
     height,
     fdDenoise,
@@ -474,11 +464,6 @@ export default function SettingsPage() {
                       onChange={setFaceLoraStrength}
                     />
                     <SmartSlider
-                      paramKey="realism_lora_strength"
-                      value={realismStrength}
-                      onChange={setRealismStrength}
-                    />
-                    <SmartSlider
                       paramKey="ip_adapter_strength"
                       value={ipAdapterStrength}
                       onChange={setIpAdapterStrength}
@@ -516,11 +501,6 @@ export default function SettingsPage() {
                       paramKey="steps"
                       value={steps}
                       onChange={setSteps}
-                    />
-                    <SmartSlider
-                      paramKey="cfg"
-                      value={cfg}
-                      onChange={setCfg}
                     />
                   </div>
 

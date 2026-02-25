@@ -122,8 +122,6 @@
     "generating": "Generating...",
     "advancedSettings": "Advanced Settings",
     "faceLoraFile": "Face LoRA File",
-    "negativePrompt": "Negative Prompt",
-    "negativePromptPlaceholder": "Elements you don't want...",
     "seed": "Seed",
     "seedRandom": "Random",
     "preview": "Preview",
@@ -143,7 +141,6 @@
     "seedTooltip": "Same seed + same settings = same image. -1 produces a different result each time.",
     "lastSeed": "Last: {seed}",
     "faceEnhanceSection": "Face Enhancement",
-    "negativePromptTooltip": "Describe what you don't want in the image. Usually no need to change the default.",
     "submitting": "Submitting job...",
     "successGenerated": "Image generated successfully!",
     "noImageReturned": "No image returned",
@@ -171,7 +168,6 @@
     "upscale": "4K Upscale",
     "advancedSettings": "Advanced Settings",
     "editDenoise": "Edit Strength",
-    "negativePrompt": "Negative Prompt",
     "compare": "Compare",
     "original": "Original",
     "result": "Result",
@@ -194,8 +190,7 @@
     "editSuccess": "Image edited!",
     "detailerSuccess": "Face enhanced + upscaled to 4K!",
     "fileReadError": "Could not read image file",
-    "noPromptEdit": "Describe the changes you want",
-    "negativePromptTooltip": "Describe what you don't want in the image. Usually no need to change the default."
+    "noPromptEdit": "Describe the changes you want"
   },
   "batch": {
     "heading": "Batch Generation",
@@ -216,9 +211,6 @@
     },
     "baseSeed": "Base Seed",
     "baseSeedLabel": "Base Seed",
-    "negativePrompt": "Negative Prompt",
-    "negativePromptLabel": "Negative Prompt",
-    "negativePromptTooltip": "Describe what you don't want in the image. Usually no need to change the default.",
     "results": "Results",
     "seed": "Seed",
     "promptLabel": "Prompt",
@@ -443,11 +435,6 @@
         "recommended": "0.85 – 0.95",
         "warning": "Values above 1.0 may cause face distortions"
       },
-      "realism_lora_strength": {
-        "label": "Realism",
-        "description": "Increases how realistic the photo looks. Too high may look overly sharp and artificial.",
-        "recommended": "0.30 – 0.45"
-      },
       "ip_adapter_strength": {
         "label": "Reference Photo Effect",
         "description": "Controls how much your reference photo influences the result. Higher = more similarity but less pose/scene flexibility.",
@@ -457,12 +444,6 @@
         "label": "Processing Steps",
         "description": "How many steps to generate the image. More steps = more detail but slower. Fewer is usually enough.",
         "recommended": "25 – 35"
-      },
-      "cfg": {
-        "label": "Prompt Adherence",
-        "description": "Controls how closely the AI follows your prompt. For Flux models, low values (1.0) work best.",
-        "recommended": "1.0",
-        "warning": "Flux models work best around 1.0. 2.0+ is not recommended."
       },
       "face_detailer_denoise": {
         "label": "Face Enhancement",

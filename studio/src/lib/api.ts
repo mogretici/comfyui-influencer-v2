@@ -120,8 +120,8 @@ class RunPodClient {
   async runAndWait(
     params: WorkflowParams,
     onProgress?: (status: string) => void,
-    pollInterval = 2000,
-    maxWait = 300000
+    pollInterval = 3000,
+    maxWait = 600000
   ): Promise<RunPodResponse> {
     const startRes = await this.run(params);
     const jobId = startRes.id;
@@ -162,7 +162,7 @@ class RunPodClient {
     } catch {
       // Ignore cancel errors
     }
-    throw new Error("Job timed out after 5 minutes");
+    throw new Error("Job timed out after 10 minutes");
   }
 }
 

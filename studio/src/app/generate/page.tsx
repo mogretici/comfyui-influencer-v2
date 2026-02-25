@@ -43,7 +43,6 @@ import { getRunPodClient, base64ToUrl, downloadBase64Image } from "@/lib/api";
 import {
   SCENE_PRESETS,
   buildPrompt,
-  DEFAULT_NEGATIVE_PROMPT,
 } from "@/lib/presets";
 import {
   QUALITY_PRESETS,
@@ -158,13 +157,10 @@ export default function GeneratePage() {
   // Advanced overrides (initialized from quality preset)
   const qualityPreset = useMemo(() => getPresetByLevel(qualityLevel), [qualityLevel]);
 
-  const [negativePrompt, setNegativePrompt] = useState(DEFAULT_NEGATIVE_PROMPT);
   const [faceLora, setFaceLora] = useState(settings.default_face_lora);
   const [faceLoraStrength, setFaceLoraStrength] = useState(qualityPreset.params.face_lora_strength);
-  const [realismStrength, setRealismStrength] = useState(qualityPreset.params.realism_lora_strength);
   const [ipAdapterStrength, setIpAdapterStrength] = useState(qualityPreset.params.ip_adapter_strength);
   const [steps, setSteps] = useState(qualityPreset.params.steps);
-  const [cfg, setCfg] = useState(qualityPreset.params.cfg);
   const [width, setWidth] = useState(qualityPreset.params.width);
   const [height, setHeight] = useState(qualityPreset.params.height);
   const [faceDetailerDenoise, setFaceDetailerDenoise] = useState(qualityPreset.params.face_detailer_denoise);
@@ -179,10 +175,8 @@ export default function GeneratePage() {
       if (!showAdvanced) {
         const preset = getPresetByLevel(level);
         setFaceLoraStrength(preset.params.face_lora_strength);
-        setRealismStrength(preset.params.realism_lora_strength);
         setIpAdapterStrength(preset.params.ip_adapter_strength);
         setSteps(preset.params.steps);
-        setCfg(preset.params.cfg);
         setWidth(preset.params.width);
         setHeight(preset.params.height);
         setFaceDetailerDenoise(preset.params.face_detailer_denoise);
@@ -196,7 +190,6 @@ export default function GeneratePage() {
     if (!preset) return;
     setSelectedPreset(presetId);
     setPrompt(buildPrompt(preset.prompt_template, "ohwx woman"));
-    setNegativePrompt(preset.negative_prompt);
   }, []);
 
   const handleGenerate = useCallback(async () => {
@@ -222,13 +215,10 @@ export default function GeneratePage() {
       const params: GenerateParams = {
         action: "generate",
         prompt,
-        negative_prompt: negativePrompt,
         face_lora: faceLora,
         face_lora_strength: faceLoraStrength,
-        realism_lora_strength: realismStrength,
         ip_adapter_strength: ipAdapterStrength,
         steps,
-        cfg,
         width,
         height,
         seed,
@@ -248,7 +238,6 @@ export default function GeneratePage() {
           id: crypto.randomUUID(),
           base64: imageBase64,
           prompt,
-          negative_prompt: negativePrompt,
           action: "generate",
           params: params as unknown as Record<string, unknown>,
           seed: result.output.seed ?? -1,
@@ -270,8 +259,8 @@ export default function GeneratePage() {
       setProgress("");
     }
   }, [
-    isConfigured, prompt, negativePrompt, faceLora, faceLoraStrength,
-    realismStrength, ipAdapterStrength, steps, cfg, width, height,
+    isConfigured, prompt, faceLora, faceLoraStrength,
+    ipAdapterStrength, steps, width, height,
     seed, faceDetailerDenoise, settings, setGenerating, setProgress, addImage,
   ]);
 
@@ -453,11 +442,6 @@ export default function GeneratePage() {
                       onChange={setFaceLoraStrength}
                     />
                     <SmartSlider
-                      paramKey="realism_lora_strength"
-                      value={realismStrength}
-                      onChange={setRealismStrength}
-                    />
-                    <SmartSlider
                       paramKey="ip_adapter_strength"
                       value={ipAdapterStrength}
                       onChange={setIpAdapterStrength}
@@ -492,7 +476,6 @@ export default function GeneratePage() {
                       </div>
                     </div>
                     <SmartSlider paramKey="steps" value={steps} onChange={setSteps} />
-                    <SmartSlider paramKey="cfg" value={cfg} onChange={setCfg} />
                     <div className="space-y-1">
                       <div className="flex items-center gap-1.5">
                         <Label className="text-xs">{t("seed")}</Label>
@@ -551,32 +534,6 @@ export default function GeneratePage() {
                     />
                   </div>
 
-                  <div className="border-t border-border/20" />
-
-                  {/* Negative Prompt */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-1.5">
-                      <Label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/40">
-                        {t("negativePrompt")}
-                      </Label>
-                      <TooltipProvider delayDuration={200}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className="h-3 w-3 cursor-help text-muted-foreground/40" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-[250px] text-xs">
-                            {t("negativePromptTooltip")}
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                    <Textarea
-                      value={negativePrompt}
-                      onChange={(e) => setNegativePrompt(e.target.value)}
-                      rows={2}
-                      className="resize-none border-0 bg-muted/30 text-xs text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/30"
-                    />
-                  </div>
                 </CardContent>
               </Card>
             </CollapsibleContent>

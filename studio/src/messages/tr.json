@@ -122,8 +122,6 @@
     "generating": "Oluşturuluyor...",
     "advancedSettings": "Gelişmiş Ayarlar",
     "faceLoraFile": "Face LoRA Dosyası",
-    "negativePrompt": "Negatif Prompt",
-    "negativePromptPlaceholder": "İstemediğiniz öğeler...",
     "seed": "Seed",
     "seedRandom": "Rastgele",
     "preview": "Ön İzleme",
@@ -143,7 +141,6 @@
     "seedTooltip": "Aynı seed + aynı ayarlar = aynı görsel. -1 her seferinde farklı sonuç üretir.",
     "lastSeed": "Son: {seed}",
     "faceEnhanceSection": "Yüz İyileştirme",
-    "negativePromptTooltip": "Görselde istemediğiniz şeyleri yazın. Genelde varsayılanı değiştirmeye gerek yoktur.",
     "submitting": "İş gönderiliyor...",
     "successGenerated": "Görsel başarıyla oluşturuldu!",
     "noImageReturned": "Görsel döndürülmedi",
@@ -171,7 +168,6 @@
     "upscale": "4K Büyütme",
     "advancedSettings": "Gelişmiş Ayarlar",
     "editDenoise": "Düzenleme Gücü",
-    "negativePrompt": "Negatif Prompt",
     "compare": "Karşılaştır",
     "original": "Orijinal",
     "result": "Sonuç",
@@ -194,8 +190,7 @@
     "editSuccess": "Görsel düzenlendi!",
     "detailerSuccess": "Yüz iyileştirildi + 4K'ya büyütüldü!",
     "fileReadError": "Görsel dosyası okunamadı",
-    "noPromptEdit": "İstediğin değişikliği açıkla",
-    "negativePromptTooltip": "Görselde istemediğiniz şeyleri yazın. Genelde varsayılanı değiştirmeye gerek yoktur."
+    "noPromptEdit": "İstediğin değişikliği açıkla"
   },
   "batch": {
     "heading": "Toplu Üretim",
@@ -216,9 +211,6 @@
     },
     "baseSeed": "Başlangıç Seed",
     "baseSeedLabel": "Başlangıç Seed",
-    "negativePrompt": "Negatif Prompt",
-    "negativePromptLabel": "Negatif Prompt",
-    "negativePromptTooltip": "Görselde istemediğiniz şeyleri yazın. Genelde varsayılanı değiştirmeye gerek yoktur.",
     "results": "Sonuçlar",
     "seed": "Seed",
     "promptLabel": "Prompt",
@@ -443,11 +435,6 @@
         "recommended": "0.85 – 0.95",
         "warning": "1.0 üstü yüzde bozulmalara neden olabilir"
       },
-      "realism_lora_strength": {
-        "label": "Gerçekçilik",
-        "description": "Fotoğrafın ne kadar gerçekçi görüneceğini artırır. Çok yüksek yaparsanız aşırı keskin ve yapay durabilir.",
-        "recommended": "0.30 – 0.45"
-      },
       "ip_adapter_strength": {
         "label": "Referans Foto Etkisi",
         "description": "Referans fotoğrafınızın sonuca ne kadar etki edeceğini belirler. Yüksek = daha çok benzerlik ama poz/sahne esnekliği azalır.",
@@ -457,12 +444,6 @@
         "label": "İşlem Adımları",
         "description": "Görsel kaç adımda oluşturulacak. Fazla adım = daha detaylı ama daha yavaş. Azı genelde yeterli.",
         "recommended": "25 – 35"
-      },
-      "cfg": {
-        "label": "Prompt Sadakati",
-        "description": "Yapay zekanın prompt'unuza ne kadar sadık kalacağını belirler. Flux modelleri için düşük değerler (1.0) en iyi sonucu verir.",
-        "recommended": "1.0",
-        "warning": "Flux modelleri 1.0 civarında en iyi çalışır. 2.0+ önerilmez."
       },
       "face_detailer_denoise": {
         "label": "Yüz İyileştirme",

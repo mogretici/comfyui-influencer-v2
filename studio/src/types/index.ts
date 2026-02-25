@@ -5,26 +5,21 @@ export type GenerationAction = "generate" | "edit" | "detailer";
 export interface GenerateParams {
   action: "generate";
   prompt: string;
-  negative_prompt?: string;
   face_lora?: string;
   face_lora_strength?: number;
-  realism_lora_strength?: number;
   ip_adapter_strength?: number;
   reference_image?: string;
   width?: number;
   height?: number;
   steps?: number;
-  cfg?: number;
   seed?: number;
   face_detailer_denoise?: number;
-  face_margin?: number;
   face_feather?: number;
 }
 
 export interface EditParams {
   action: "edit";
   prompt: string;
-  negative_prompt?: string;
   input_image: string;
   denoise?: number;
   face_lora?: string;
@@ -79,7 +74,6 @@ export interface GeneratedImage {
   id: string;
   base64: string;
   prompt: string;
-  negative_prompt: string;
   action: GenerationAction;
   params: Record<string, unknown>;
   seed: number;
@@ -94,10 +88,8 @@ export interface StudioSettings {
   runpod_endpoint_id: string;
   default_face_lora: string;
   default_face_lora_strength: number;
-  default_realism_lora_strength: number;
   default_ip_adapter_strength: number;
   default_steps: number;
-  default_cfg: number;
   default_width: number;
   default_height: number;
   default_face_detailer_denoise: number;
@@ -111,7 +103,6 @@ export interface ScenePreset {
   descriptionKey: string;
   icon: string;
   prompt_template: string;
-  negative_prompt: string;
   recommended_params?: Partial<GenerateParams>;
 }
 

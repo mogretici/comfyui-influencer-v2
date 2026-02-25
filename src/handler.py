@@ -149,7 +149,13 @@ def build_generate_workflow(params: dict) -> dict:
     wf = load_workflow("txt2img-flux2")
 
     # Core prompt
-    prompt = params.get("prompt", "A photo of ohwx woman, professional headshot")
+    prompt = params.get("prompt",
+        "Close-up portrait photograph of a 25-year-old woman with natural olive skin, "
+        "subtle smile, hazel eyes. Shot on Canon EOS R5, 85mm f/1.4 lens, natural window light, "
+        "shallow depth of field. Visible skin pores and subtle freckles. "
+        "No makeup or minimal makeup, hair slightly messy. "
+        "Warm golden hour tones, bokeh background."
+    )
 
     # Model parameters
     face_lora = params.get("face_lora", "")
@@ -169,8 +175,8 @@ def build_generate_workflow(params: dict) -> dict:
         seed = int(time.time() * 1000) % (2**32)
 
     # FaceDetailer parameters
-    fd_denoise = params.get("face_detailer_denoise", 0.42)
-    fd_feather = params.get("face_feather", 20)
+    fd_denoise = params.get("face_detailer_denoise", 0.35)
+    fd_feather = params.get("face_feather", 15)
 
     # ── Inject Face LoRA node if provided ──
     if not skip_face_lora:

@@ -45,7 +45,7 @@ import {
   base64ToUrl,
   downloadBase64Image,
 } from "@/lib/api";
-import { DEFAULT_NEGATIVE_PROMPT } from "@/lib/presets";
+
 import {
   CHANGE_AMOUNTS,
   PARAM_HINTS,
@@ -146,7 +146,6 @@ export default function EditorPage() {
   const [inputImage, setInputImage] = useState<string | null>(null);
   const [inputPreview, setInputPreview] = useState<string | null>(null);
   const [editPrompt, setEditPrompt] = useState("");
-  const [editNegative, setEditNegative] = useState(DEFAULT_NEGATIVE_PROMPT);
 
   // Simple mode: change amount selector
   const [changeAmount, setChangeAmount] = useState<ChangeAmount>("moderate");
@@ -232,7 +231,6 @@ export default function EditorPage() {
       const params: EditParams = {
         action: "edit",
         prompt: editPrompt,
-        negative_prompt: editNegative,
         input_image: inputImage,
         denoise: editDenoise,
         face_lora: settings.default_face_lora,
@@ -248,7 +246,6 @@ export default function EditorPage() {
           id: crypto.randomUUID(),
           base64: img,
           prompt: editPrompt,
-          negative_prompt: editNegative,
           action: "edit",
           params: params as unknown as Record<string, unknown>,
           seed: result.output.seed ?? -1,
@@ -271,7 +268,6 @@ export default function EditorPage() {
     isConfigured,
     inputImage,
     editPrompt,
-    editNegative,
     editDenoise,
     settings,
     setGenerating,
@@ -317,7 +313,6 @@ export default function EditorPage() {
           id: crypto.randomUUID(),
           base64: img,
           prompt: t("detailerButton"),
-          negative_prompt: "",
           action: "detailer",
           params: params as unknown as Record<string, unknown>,
           seed: result.output.seed ?? -1,
@@ -655,29 +650,6 @@ export default function EditorPage() {
                         value={editDenoise}
                         onChange={setEditDenoise}
                       />
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-1.5">
-                          <Label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/40">
-                            {t("negativePrompt")}
-                          </Label>
-                          <TooltipProvider delayDuration={200}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Info className="h-3 w-3 cursor-help text-muted-foreground/40" />
-                              </TooltipTrigger>
-                              <TooltipContent className="max-w-[250px] text-xs">
-                                {t("negativePromptTooltip")}
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                        <Textarea
-                          value={editNegative}
-                          onChange={(e) => setEditNegative(e.target.value)}
-                          rows={2}
-                          className="resize-none border-0 bg-muted/30 text-xs text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/30"
-                        />
-                      </div>
                     </CardContent>
                   </Card>
                 </CollapsibleContent>

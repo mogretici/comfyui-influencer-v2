@@ -12,9 +12,7 @@ export interface QualityPreset {
   icon: string;
   params: {
     steps: number;
-    cfg: number;
     face_lora_strength: number;
-    realism_lora_strength: number;
     ip_adapter_strength: number;
     face_detailer_denoise: number;
     width: number;
@@ -30,9 +28,7 @@ export const QUALITY_PRESETS: QualityPreset[] = [
     icon: "⚡",
     params: {
       steps: 18,
-      cfg: 1.0,
       face_lora_strength: 0.85,
-      realism_lora_strength: 0.3,
       ip_adapter_strength: 0.4,
       face_detailer_denoise: 0.38,
       width: 768,
@@ -46,9 +42,7 @@ export const QUALITY_PRESETS: QualityPreset[] = [
     icon: "✨",
     params: {
       steps: 28,
-      cfg: 1.0,
       face_lora_strength: 0.9,
-      realism_lora_strength: 0.35,
       ip_adapter_strength: 0.5,
       face_detailer_denoise: 0.42,
       width: 1024,
@@ -62,9 +56,7 @@ export const QUALITY_PRESETS: QualityPreset[] = [
     icon: "💎",
     params: {
       steps: 40,
-      cfg: 1.0,
       face_lora_strength: 0.95,
-      realism_lora_strength: 0.4,
       ip_adapter_strength: 0.55,
       face_detailer_denoise: 0.45,
       width: 1024,
@@ -99,14 +91,6 @@ export const PARAM_HINTS: Record<string, ParamHint> = {
     recommendedMin: 0.8,
     recommendedMax: 1.0,
   },
-  realism_lora_strength: {
-    hintKey: "realism_lora_strength",
-    min: 0,
-    max: 1,
-    step: 0.05,
-    recommendedMin: 0.25,
-    recommendedMax: 0.5,
-  },
   ip_adapter_strength: {
     hintKey: "ip_adapter_strength",
     min: 0,
@@ -122,14 +106,6 @@ export const PARAM_HINTS: Record<string, ParamHint> = {
     step: 1,
     recommendedMin: 20,
     recommendedMax: 40,
-  },
-  cfg: {
-    hintKey: "cfg",
-    min: 0.5,
-    max: 5,
-    step: 0.1,
-    recommendedMin: 0.8,
-    recommendedMax: 1.5,
   },
   face_detailer_denoise: {
     hintKey: "face_detailer_denoise",

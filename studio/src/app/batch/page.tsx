@@ -45,7 +45,7 @@ import {
   useGalleryStore,
 } from "@/lib/store";
 import { getRunPodClient, base64ToUrl, downloadBase64Image } from "@/lib/api";
-import { DEFAULT_NEGATIVE_PROMPT } from "@/lib/presets";
+
 import {
   QUALITY_PRESETS,
   getPresetByLevel,
@@ -77,9 +77,6 @@ export default function BatchPage() {
 
   // Advanced mode
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [negativePrompt, setNegativePrompt] = useState(
-    DEFAULT_NEGATIVE_PROMPT
-  );
   const [seedStrategy, setSeedStrategy] = useState<SeedStrategy>("random");
   const [baseSeed, setBaseSeed] = useState(42);
 
@@ -119,13 +116,10 @@ export default function BatchPage() {
       const genParams: GenerateParams = {
         action: "generate",
         prompt,
-        negative_prompt: negativePrompt,
         face_lora: settings.default_face_lora,
         face_lora_strength: params.face_lora_strength,
-        realism_lora_strength: params.realism_lora_strength,
         ip_adapter_strength: params.ip_adapter_strength,
         steps: params.steps,
-        cfg: params.cfg,
         width: params.width,
         height: params.height,
         seed,
@@ -148,7 +142,6 @@ export default function BatchPage() {
             id: crypto.randomUUID(),
             base64: img,
             prompt,
-            negative_prompt: negativePrompt,
             action: "generate",
             params: genParams as unknown as Record<string, unknown>,
             seed: resultSeed,
@@ -168,7 +161,6 @@ export default function BatchPage() {
   }, [
     isConfigured,
     prompt,
-    negativePrompt,
     variations,
     seedStrategy,
     baseSeed,
@@ -377,30 +369,6 @@ export default function BatchPage() {
                     </div>
                   )}
 
-                  {/* Negative Prompt */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-1.5">
-                      <Label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/40">
-                        {t("negativePromptLabel")}
-                      </Label>
-                      <TooltipProvider delayDuration={200}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className="h-3 w-3 cursor-help text-muted-foreground/40" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-[250px] text-xs">
-                            {t("negativePromptTooltip")}
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                    <Textarea
-                      value={negativePrompt}
-                      onChange={(e) => setNegativePrompt(e.target.value)}
-                      rows={2}
-                      className="resize-none border-0 bg-muted/30 text-xs text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/30"
-                    />
-                  </div>
                 </CardContent>
               </Card>
             </CollapsibleContent>
