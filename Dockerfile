@@ -76,21 +76,7 @@ RUN cd /comfyui/custom_nodes && \
 # 5.6 GGUF-aware LoRA loader (fixes silent LoRA failure with GGUF quantized models)
 # Patch: ComfyUI v0.15+ renamed "unet" to "diffusion_models" in folder_paths
 RUN cd /comfyui/custom_nodes && \
-    git clone --depth 1 https://github.com/Repeerc/ComfyUI-GGUF-LoRA-Load.git && \
-    cd ComfyUI-GGUF-LoRA-Load && \
-    python -c "
-import re
-with open('nodes.py', 'r') as f:
-    code = f.read()
-# Replace folder_paths.folder_names_and_paths['unet'] with safe fallback
-code = code.replace(
-    'folder_paths.folder_names_and_paths[\"unet\"]',
-    'folder_paths.folder_names_and_paths.get(\"diffusion_models\", folder_paths.folder_names_and_paths.get(\"unet\", [[], set()]))'
-)
-with open('nodes.py', 'w') as f:
-    f.write(code)
-print('Patched nodes.py: unet -> diffusion_models fallback')
-"
+    git clone --depth 1 https://github.com/Repeerc/ComfyUI-GGUF-LoRA-Load.git
 
 # 5.7 Optical Realism — depth-aware grain, chromatic aberration, vignette, atmosphere
 RUN cd /comfyui/custom_nodes && \
@@ -108,7 +94,11 @@ RUN apt-get purge -y build-essential python3.12-dev && \
     apt-get autoremove -y && apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /root/.cache/pip
 
-# Stage 7: Handler + startup files + workflows
+# Stage 7: Patch GGUF-LoRA-Load for ComfyUI v0.15+ compatibility
+COPY src/patch-gguf-lora.py /tmp/patch-gguf-lora.py
+RUN python /tmp/patch-gguf-lora.py && rm /tmp/patch-gguf-lora.py
+
+# Stage 8: Handler + startup files + workflows
 WORKDIR /
 COPY src/start.sh src/handler.py src/extra_model_paths.yaml src/download-models.sh ./
 COPY workflows/ /workflows/
