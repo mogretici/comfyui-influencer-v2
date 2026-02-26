@@ -235,6 +235,7 @@ export default function EditorPage() {
         denoise: editDenoise,
         face_lora: settings.default_face_lora,
         face_lora_strength: settings.default_face_lora_strength,
+        lora_url: settings.default_lora_url || undefined,
       };
 
       const result = await client.runAndWait(params, setProgress);

@@ -118,6 +118,7 @@ export default function BatchPage() {
         prompt,
         face_lora: settings.default_face_lora,
         face_lora_strength: params.face_lora_strength,
+        lora_url: settings.default_lora_url || undefined,
         ip_adapter_strength: params.ip_adapter_strength,
         steps: params.steps,
         width: params.width,

@@ -7,6 +7,7 @@ export interface GenerateParams {
   prompt: string;
   face_lora?: string;
   face_lora_strength?: number;
+  lora_url?: string;
   ip_adapter_strength?: number;
   reference_image?: string;
   width?: number;
@@ -24,6 +25,7 @@ export interface EditParams {
   denoise?: number;
   face_lora?: string;
   face_lora_strength?: number;
+  lora_url?: string;
   seed?: number;
 }
 
@@ -88,6 +90,7 @@ export interface StudioSettings {
   runpod_endpoint_id: string;
   default_face_lora: string;
   default_face_lora_strength: number;
+  default_lora_url: string;
   default_ip_adapter_strength: number;
   default_steps: number;
   default_width: number;

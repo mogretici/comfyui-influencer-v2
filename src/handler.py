@@ -582,6 +582,47 @@ def handler(event: dict) -> dict:
             except Exception as e:
                 debug_log(f"Could not query {node_type}: {e}")
 
+        # ── Auto-download LoRA from URL if provided ──
+        lora_url = params.get("lora_url", "")
+        if lora_url:
+            # Extract filename from URL
+            lora_name = params.get("lora_name", lora_url.rstrip("/").split("/")[-1])
+            if not lora_name.endswith(".safetensors"):
+                lora_name += ".safetensors"
+            lora_dir = "/runpod-volume/models/loras"
+            os.makedirs(lora_dir, exist_ok=True)
+            dest = os.path.join(lora_dir, lora_name)
+
+            if os.path.isfile(dest):
+                debug_log(f"LoRA already on disk: {dest}")
+            else:
+                debug_log(f"Auto-downloading LoRA: {lora_url} -> {dest}")
+                try:
+                    req = urllib.request.Request(lora_url, headers={"User-Agent": "Mozilla/5.0"})
+                    with urllib.request.urlopen(req, timeout=600) as resp, open(dest + ".tmp", "wb") as f:
+                        while True:
+                            chunk = resp.read(131072)
+                            if not chunk:
+                                break
+                            f.write(chunk)
+                    os.rename(dest + ".tmp", dest)
+                    size_mb = os.path.getsize(dest) / (1024 * 1024)
+                    debug_log(f"LoRA downloaded: {dest} ({size_mb:.1f} MB)")
+                except Exception as e:
+                    debug_log(f"LoRA auto-download failed: {e}")
+                    if os.path.exists(dest + ".tmp"):
+                        os.remove(dest + ".tmp")
+
+            # Map lora_url params to face_lora params for workflow builder
+            if not params.get("face_lora"):
+                params["face_lora"] = lora_name
+            if not params.get("face_lora_strength") and params.get("lora_strength"):
+                params["face_lora_strength"] = params["lora_strength"]
+
+        # Set default face_lora_strength if face_lora is set but strength is missing
+        if params.get("face_lora") and not params.get("face_lora_strength"):
+            params["face_lora_strength"] = 0.85
+
         # Upload reference image for IP-Adapter if provided
         ref_image_b64 = params.get("reference_image")
         ref_filename = None
@@ -592,30 +633,7 @@ def handler(event: dict) -> dict:
 
         # Utility action: download a LoRA file to the volume
         if action == "download_lora":
-            lora_url = params.get("lora_url", "")
-            lora_name = params.get("lora_name", "my_face.safetensors")
-            if not lora_url:
-                return {"error": "lora_url is required"}
-            lora_dir = "/runpod-volume/models/loras"
-            os.makedirs(lora_dir, exist_ok=True)
-            dest = os.path.join(lora_dir, lora_name)
-            debug_log(f"Downloading LoRA: {lora_url} -> {dest}")
-            try:
-                req = urllib.request.Request(lora_url, headers={"User-Agent": "Mozilla/5.0"})
-                with urllib.request.urlopen(req, timeout=600) as resp, open(dest, "wb") as f:
-                    total = 0
-                    while True:
-                        chunk = resp.read(131072)
-                        if not chunk:
-                            break
-                        f.write(chunk)
-                        total += len(chunk)
-                size_mb = os.path.getsize(dest) / (1024 * 1024)
-                debug_log(f"LoRA downloaded: {dest} ({size_mb:.1f} MB)")
-                return {"status": "ok", "path": dest, "size_mb": round(size_mb, 1)}
-            except Exception as e:
-                debug_log(f"LoRA download failed: {e}")
-                return {"error": f"Download failed: {str(e)}"}
+            return {"status": "ok", "path": os.path.join("/runpod-volume/models/loras", params.get("face_lora", "")), "message": "LoRA ready"}
 
         # Build workflow based on action
         if action == "generate":

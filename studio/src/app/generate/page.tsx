@@ -256,6 +256,7 @@ export default function GeneratePage() {
         prompt,
         face_lora: faceLora,
         face_lora_strength: faceLoraStrength,
+        lora_url: settings.default_lora_url || undefined,
         ip_adapter_strength: ipAdapterStrength,
         steps,
         width,
