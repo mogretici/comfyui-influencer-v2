@@ -40,7 +40,7 @@ if [ -d "/runpod-volume/code/workflows" ]; then
 fi
 
 # Download models if not already present
-/download-models.sh
+/download-models.sh || echo "[WARN] download-models.sh exited with code $?, continuing startup"
 
 # Copy extra model paths config
 if [ -f /extra_model_paths.yaml ]; then

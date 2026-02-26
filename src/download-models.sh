@@ -1,11 +1,13 @@
 #!/bin/bash
-set -euo pipefail
+set -uo pipefail
+# NOTE: no set -e — download failures must NOT crash the container
 
 # Download all models to Network Volume (one-time operation)
 # Subsequent runs skip already-downloaded files
 
 MODELS_DIR="/runpod-volume/models"
 MARKER="$MODELS_DIR/.download_complete_v5"
+DOWNLOAD_FAILURES=0
 
 if [ -f "$MARKER" ]; then
     echo "[OK] Models already downloaded (marker v5 found)"
@@ -31,11 +33,20 @@ download() {
     echo "[DL] $name ..."
 
     # Support HF_TOKEN for gated repos
+    local wget_exit=0
     if [ -n "${HF_TOKEN:-}" ]; then
-        wget -q --show-progress --header="Authorization: Bearer $HF_TOKEN" -O "${dest}.tmp" "$url"
+        wget -q --show-progress --header="Authorization: Bearer $HF_TOKEN" -O "${dest}.tmp" "$url" || wget_exit=$?
     else
-        wget -q --show-progress -O "${dest}.tmp" "$url"
+        wget -q --show-progress -O "${dest}.tmp" "$url" || wget_exit=$?
     fi
+
+    if [ $wget_exit -ne 0 ]; then
+        echo "[WARN] Failed to download $name (wget exit $wget_exit), skipping"
+        rm -f "${dest}.tmp"
+        DOWNLOAD_FAILURES=$((DOWNLOAD_FAILURES + 1))
+        return 0
+    fi
+
     mv "${dest}.tmp" "$dest"
     echo "[OK] $name"
 }
@@ -64,11 +75,16 @@ download "$MODELS_DIR/xlabs/ipadapters/flux-ip-adapter-v2.safetensors" \
 if [ ! -d "$MODELS_DIR/insightface/models/antelopev2" ]; then
     echo "[DL] InsightFace AntelopeV2 ..."
     mkdir -p "$MODELS_DIR/insightface/models"
-    wget -q -O /tmp/antelopev2.zip \
-        "https://huggingface.co/MonsterMMORPG/tools/resolve/main/antelopev2.zip"
-    unzip -o /tmp/antelopev2.zip -d "$MODELS_DIR/insightface/models/"
-    rm /tmp/antelopev2.zip
-    echo "[OK] InsightFace AntelopeV2"
+    if wget -q -O /tmp/antelopev2.zip \
+        "https://huggingface.co/MonsterMMORPG/tools/resolve/main/antelopev2.zip"; then
+        unzip -o /tmp/antelopev2.zip -d "$MODELS_DIR/insightface/models/"
+        rm -f /tmp/antelopev2.zip
+        echo "[OK] InsightFace AntelopeV2"
+    else
+        echo "[WARN] Failed to download InsightFace AntelopeV2, skipping"
+        rm -f /tmp/antelopev2.zip
+        DOWNLOAD_FAILURES=$((DOWNLOAD_FAILURES + 1))
+    fi
 else
     echo "[SKIP] InsightFace AntelopeV2 (already exists)"
 fi
@@ -100,9 +116,17 @@ download "$MODELS_DIR/xlabs/controlnets/flux-openpose-controlnet.safetensors" \
 # 10. DepthAnythingV2 — auto-downloaded by comfyui_controlnet_aux on first use
 # AUX_ANNOTATOR_CKPTS_PATH set in start.sh ensures persistent storage on network volume
 
-# Mark download complete
-touch "$MARKER"
-
-echo "============================================"
-echo " All models downloaded successfully!"
-echo "============================================"
+# Mark download complete (only if all downloads succeeded)
+if [ $DOWNLOAD_FAILURES -eq 0 ]; then
+    touch "$MARKER"
+    echo "============================================"
+    echo " All models downloaded successfully!"
+    echo "============================================"
+else
+    echo "============================================"
+    echo " [WARN] $DOWNLOAD_FAILURES download(s) failed"
+    echo " Container will start anyway. Missing models"
+    echo " will cause errors for features that need them."
+    echo " Marker NOT set — downloads will retry next start."
+    echo "============================================"
+fi
