@@ -94,9 +94,11 @@ RUN apt-get purge -y build-essential python3.12-dev && \
     apt-get autoremove -y && apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /root/.cache/pip
 
-# Stage 7: Patch GGUF-LoRA-Load for ComfyUI v0.15+ compatibility
-COPY src/patch-gguf-lora.py /tmp/patch-gguf-lora.py
-RUN python /tmp/patch-gguf-lora.py && rm /tmp/patch-gguf-lora.py
+# Stage 7: Patches for custom node compatibility
+COPY src/patch-gguf-lora.py src/patch-optical-realism.py /tmp/
+RUN python /tmp/patch-gguf-lora.py && \
+    python /tmp/patch-optical-realism.py && \
+    rm /tmp/patch-gguf-lora.py /tmp/patch-optical-realism.py
 
 # Stage 8: Handler + startup files + workflows
 WORKDIR /
