@@ -1,17 +1,17 @@
 """
-RunPod Serverless Handler — ComfyUI + Flux 2 Dev AI Influencer Pipeline v4
+RunPod Serverless Handler — ComfyUI + Flux 1 Dev AI Influencer Pipeline v5
 
 Endpoints:
   - generate: Text-to-image with Face LoRA + IP-Adapter + FaceDetailer + Optical Realism
   - edit: Image-to-image scene/outfit change + Optical Realism
   - detailer: FaceDetailer + 4K upscale + Optical Realism
 
-Flux 2 Architecture:
-  - UNet: UnetLoaderGGUF (flux2-dev-Q5_K_M.gguf)
-  - Text Encoder: CLIPLoader (Mistral 3 Small FP8, type: flux2)
-  - VAE: VAELoader (flux2-vae.safetensors)
+Flux 1 Dev Architecture:
+  - UNet: UnetLoaderGGUF (flux1-dev-Q8_0.gguf)
+  - Text Encoder: DualCLIPLoader (CLIP-L + T5-XXL FP8, type: flux)
+  - VAE: VAELoader (ae.safetensors)
   - Sampling: SamplerCustomAdvanced + BasicGuider
-  - LoRA: UnetGGUFLora (GGUF-aware LoRA loader)
+  - LoRA: UnetGGUFLora (GGUF-aware, kohya rank-64 face LoRA)
   - Post-processing: DepthAnythingV2 → OpticalRealism → ColorCorrect
 """
 
@@ -148,9 +148,9 @@ def inject_post_processing(wf: dict, image_source_node: str, save_node: str, par
     if not params.get("optical_realism", True):
         return image_source_node
 
-    grain = params.get("grain_intensity", 0.015)
-    temperature = params.get("color_temperature", 8.0)
-    saturation = params.get("color_saturation", 0.92)
+    grain = params.get("grain_intensity", 0.018)
+    temperature = params.get("color_temperature", 6.0)
+    saturation = params.get("color_saturation", 0.93)
 
     # Depth estimation for physically-grounded effects
     wf["30"] = {
@@ -164,35 +164,38 @@ def inject_post_processing(wf: dict, image_source_node: str, save_node: str, par
     }
 
     # OpticalRealism — physics-based camera simulation
+    # Tuned for Instagram-grade photorealism: subtle sensor noise,
+    # gentle lens effects, natural atmosphere
     wf["31"] = {
         "class_type": "OpticalRealism",
         "inputs": {
             "image": [image_source_node, 0],
             "depth_map": ["30", 0],
             "atmosphere_enabled": True,
-            "haze_strength": 0.15,
-            "lift_blacks": 0.08,
+            "haze_strength": 0.10,            # Lighter haze (was 0.15) — less fog, more clarity
+            "lift_blacks": 0.06,              # Slightly lifted blacks (real phone cameras)
             "depth_offset": 0.0,
-            "light_wrap_strength": 0.20,
-            "chromatic_aberration": 0.003,
-            "vignette_intensity": 0.12,
-            "grain_power": grain,
-            "monochrome_grain": True,
-            "highlight_rolloff": 0.05,
+            "light_wrap_strength": 0.15,      # Subtle light wrap (was 0.20)
+            "chromatic_aberration": 0.004,    # Slightly more CA (real lenses have this)
+            "vignette_intensity": 0.10,       # Gentle corner darkening (was 0.12)
+            "grain_power": grain,             # ISO 200-400 sensor noise
+            "monochrome_grain": True,         # Real sensor noise is luminance-only
+            "highlight_rolloff": 0.04,        # Natural highlight compression
         },
         "_meta": {"title": "Optical Realism"},
     }
 
-    # Color grading — warm shift + desaturation for natural look
+    # Color grading — warm shift + slight desaturation for natural skin tones
+    # AI images are typically over-saturated and too cool
     wf["32"] = {
         "class_type": "ColorCorrect",
         "inputs": {
             "image": ["31", 0],
-            "temperature": temperature,
+            "temperature": temperature,       # Warm shift for natural skin
             "hue": 0.0,
             "brightness": 0.0,
-            "contrast": 1.05,
-            "saturation": saturation,
+            "contrast": 1.04,                 # Very subtle contrast (was 1.05)
+            "saturation": saturation,          # 7% desaturation (AI images over-saturate)
             "gamma": 1.0,
         },
         "_meta": {"title": "Color Grading"},
@@ -209,14 +212,14 @@ def inject_post_processing(wf: dict, image_source_node: str, save_node: str, par
 
 
 # ──────────────────────────────────────────────
-# Workflow builders — Flux 2 Architecture
+# Workflow builders — Flux 1 Dev Architecture
 # ──────────────────────────────────────────────
 
 def build_generate_workflow(params: dict) -> dict:
     """Build txt2img workflow with Face LoRA + IP-Adapter + FaceDetailer.
 
-    Flux 2 node structure:
-      1  UnetLoaderGGUF → 2 CLIPLoader → 3 VAELoader
+    Flux 1 Dev node structure:
+      1  UnetLoaderGGUF → 2 DualCLIPLoader → 3 VAELoader
       4  CLIPTextEncode(positive) → 6 BasicGuider
       5  RandomNoise → 10 SamplerCustomAdvanced
       7  KSamplerSelect → 10
@@ -232,7 +235,7 @@ def build_generate_workflow(params: dict) -> dict:
       21 LoadFluxIPAdapter → 22
       22 ApplyFluxIPAdapter → replaces model source for downstream nodes
     """
-    wf = load_workflow("txt2img-flux2")
+    wf = load_workflow("txt2img-flux1")
 
     # Core prompt
     prompt = params.get("prompt",
@@ -380,12 +383,12 @@ def build_generate_workflow(params: dict) -> dict:
 def build_edit_workflow(params: dict) -> dict:
     """Build img2img workflow for scene/outfit changes.
 
-    Same Flux 2 node structure as generate, but:
+    Same Flux 1 Dev node structure as generate, but:
       - LoadImage → VAEEncode replaces EmptySD3LatentImage
       - BasicScheduler denoise < 1.0 (default 0.6)
       - FaceDetailer included
     """
-    wf = load_workflow("img2img-flux2")
+    wf = load_workflow("img2img-flux1")
 
     prompt = params.get("prompt", "")
     denoise = params.get("denoise", 0.6)
@@ -475,7 +478,7 @@ def build_detailer_workflow(params: dict) -> dict:
       1 UnetLoaderGGUF → 9 FaceDetailer
       4 LoadImage → 9 FaceDetailer → 11 ImageUpscaleWithModel → 12 ImageScaleBy → 13 SaveImage
     """
-    wf = load_workflow("detailer-upscale-flux2")
+    wf = load_workflow("detailer-upscale-flux1")
 
     fd_denoise = params.get("face_detailer_denoise", 0.42)
     scale_by = params.get("scale_by", 0.5)
@@ -573,7 +576,7 @@ def handler(event: dict) -> dict:
                 debug_log(f"extra_model_paths.yaml:\n{f.read()}")
 
         # Debug: ask ComfyUI what models it sees
-        for node_type in ["UnetLoaderGGUF", "CLIPLoader", "VAELoader"]:
+        for node_type in ["UnetLoaderGGUF", "DualCLIPLoader", "VAELoader"]:
             try:
                 resp = urllib.request.urlopen(f"{COMFYUI_URL}/object_info/{node_type}", timeout=10)
                 info = json.loads(resp.read())

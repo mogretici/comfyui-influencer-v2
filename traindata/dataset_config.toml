@@ -15,5 +15,5 @@ min_bucket_reso = 512
 max_bucket_reso = 1024
 
   [[datasets.subsets]]
-  image_dir = "images"
+  image_dir = "/workspace/traindata"
   num_repeats = 5

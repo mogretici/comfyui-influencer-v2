@@ -1,5 +1,5 @@
 # ============================================================
-# ComfyUI + Flux 2 Dev — AI Influencer Pipeline v4 (Optical Realism)
+# ComfyUI + Flux 1 Dev — AI Influencer Pipeline v5 (Optical Realism)
 # Target: RunPod Serverless (L40S/A40 48GB)
 # Image Size: ~5-8 GB (models on Network Volume)
 # ============================================================
