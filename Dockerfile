@@ -74,8 +74,23 @@ RUN cd /comfyui/custom_nodes && \
     git clone --depth 1 https://github.com/linhoi/ComfyUI-ACE_Plus.git
 
 # 5.6 GGUF-aware LoRA loader (fixes silent LoRA failure with GGUF quantized models)
+# Patch: ComfyUI v0.15+ renamed "unet" to "diffusion_models" in folder_paths
 RUN cd /comfyui/custom_nodes && \
-    git clone --depth 1 https://github.com/Repeerc/ComfyUI-GGUF-LoRA-Load.git
+    git clone --depth 1 https://github.com/Repeerc/ComfyUI-GGUF-LoRA-Load.git && \
+    cd ComfyUI-GGUF-LoRA-Load && \
+    python -c "
+import re
+with open('nodes.py', 'r') as f:
+    code = f.read()
+# Replace folder_paths.folder_names_and_paths['unet'] with safe fallback
+code = code.replace(
+    'folder_paths.folder_names_and_paths[\"unet\"]',
+    'folder_paths.folder_names_and_paths.get(\"diffusion_models\", folder_paths.folder_names_and_paths.get(\"unet\", [[], set()]))'
+)
+with open('nodes.py', 'w') as f:
+    f.write(code)
+print('Patched nodes.py: unet -> diffusion_models fallback')
+"
 
 # 5.7 Optical Realism — depth-aware grain, chromatic aberration, vignette, atmosphere
 RUN cd /comfyui/custom_nodes && \

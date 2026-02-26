@@ -97,11 +97,8 @@ download "$MODELS_DIR/xlabs/controlnets/flux-openpose-controlnet.safetensors" \
     "https://huggingface.co/raulc0399/flux_dev_openpose_controlnet/resolve/main/model.safetensors" \
     "XLabs ControlNet OpenPose"
 
-# 10. DepthAnythingV2 for OpticalRealism post-processing (~350MB)
-# comfyui_controlnet_aux expects .pth in ckpts/depth-anything/Depth-Anything-V2-Large/
-download "$MODELS_DIR/controlnet_aux_ckpts/depth-anything/Depth-Anything-V2-Large/depth_anything_v2_vitl.pth" \
-    "https://huggingface.co/depth-anything/Depth-Anything-V2-Large/resolve/main/depth_anything_v2_vitl.pth" \
-    "DepthAnythingV2 ViT-L (OpticalRealism)"
+# 10. DepthAnythingV2 — auto-downloaded by comfyui_controlnet_aux on first use
+# AUX_ANNOTATOR_CKPTS_PATH set in start.sh ensures persistent storage on network volume
 
 # Mark download complete
 touch "$MARKER"
