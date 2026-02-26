@@ -1,17 +1,18 @@
 """
-RunPod Serverless Handler — ComfyUI + Flux 2 Dev AI Influencer Pipeline v3
+RunPod Serverless Handler — ComfyUI + Flux 2 Dev AI Influencer Pipeline v4
 
 Endpoints:
-  - generate: Text-to-image with Face LoRA + IP-Adapter + FaceDetailer
-  - edit: Image-to-image scene/outfit change
-  - detailer: FaceDetailer + 4K upscale on existing image
+  - generate: Text-to-image with Face LoRA + IP-Adapter + FaceDetailer + Optical Realism
+  - edit: Image-to-image scene/outfit change + Optical Realism
+  - detailer: FaceDetailer + 4K upscale + Optical Realism
 
 Flux 2 Architecture:
   - UNet: UnetLoaderGGUF (flux2-dev-Q5_K_M.gguf)
   - Text Encoder: CLIPLoader (Mistral 3 Small FP8, type: flux2)
   - VAE: VAELoader (flux2-vae.safetensors)
-  - Sampling: SamplerCustomAdvanced + BasicGuider (no negative prompt for main sampler)
-  - LoRA: UnetGGUFLora (GGUF-aware LoRA loader, model only)
+  - Sampling: SamplerCustomAdvanced + BasicGuider
+  - LoRA: UnetGGUFLora (GGUF-aware LoRA loader)
+  - Post-processing: DepthAnythingV2 → OpticalRealism → ColorCorrect
 """
 
 import json
@@ -25,6 +26,7 @@ from io import BytesIO
 
 import os
 import runpod
+from PIL import Image
 
 COMFYUI_URL = "http://127.0.0.1:8188"
 TIMEOUT_SECONDS = 600
@@ -105,7 +107,13 @@ def get_output_images(history: dict) -> list[str]:
                 f"{COMFYUI_URL}/view?{params}", timeout=30
             )
             img_bytes = resp.read()
-            images.append(base64.b64encode(img_bytes).decode("utf-8"))
+            # Convert PNG → JPEG for realistic compression artifacts
+            img = Image.open(BytesIO(img_bytes))
+            if img.mode == "RGBA":
+                img = img.convert("RGB")
+            jpeg_buf = BytesIO()
+            img.save(jpeg_buf, format="JPEG", quality=93)
+            images.append(base64.b64encode(jpeg_buf.getvalue()).decode("utf-8"))
     return images
 
 
@@ -125,6 +133,79 @@ def load_workflow(name: str) -> dict:
             debug_log(f"Workflow not found at {path}")
             continue
     raise FileNotFoundError(f"Workflow '{name}' not found in {paths}")
+
+
+# ──────────────────────────────────────────────
+# Post-processing: Optical Realism + Color Grading
+# ──────────────────────────────────────────────
+
+def inject_post_processing(wf: dict, image_source_node: str, save_node: str, params: dict):
+    """Inject DepthAnythingV2 → OpticalRealism → ColorCorrect chain.
+
+    Inserts between image_source_node and save_node.
+    Returns the final output node ID (for further chaining if needed).
+    """
+    if not params.get("optical_realism", True):
+        return image_source_node
+
+    grain = params.get("grain_intensity", 0.015)
+    temperature = params.get("color_temperature", 8.0)
+    saturation = params.get("color_saturation", 0.92)
+
+    # Depth estimation for physically-grounded effects
+    wf["30"] = {
+        "class_type": "DepthAnythingV2Preprocessor",
+        "inputs": {
+            "image": [image_source_node, 0],
+            "ckpt_name": "depth_anything_v2_vitl.pth",
+            "resolution": 1024,
+        },
+        "_meta": {"title": "Depth Map (OpticalRealism)"},
+    }
+
+    # OpticalRealism — physics-based camera simulation
+    wf["31"] = {
+        "class_type": "OpticalRealism",
+        "inputs": {
+            "image": [image_source_node, 0],
+            "depth_map": ["30", 0],
+            "atmosphere_enabled": True,
+            "haze_strength": 0.15,
+            "lift_blacks": 0.08,
+            "depth_offset": 0.0,
+            "light_wrap_strength": 0.20,
+            "chromatic_aberration": 0.003,
+            "vignette_intensity": 0.12,
+            "grain_power": grain,
+            "monochrome_grain": True,
+            "highlight_rolloff": 0.05,
+        },
+        "_meta": {"title": "Optical Realism"},
+    }
+
+    # Color grading — warm shift + desaturation for natural look
+    wf["32"] = {
+        "class_type": "ColorCorrect",
+        "inputs": {
+            "image": ["31", 0],
+            "temperature": temperature,
+            "hue": 0.0,
+            "brightness": 0.0,
+            "contrast": 1.05,
+            "saturation": saturation,
+            "gamma": 1.0,
+        },
+        "_meta": {"title": "Color Grading"},
+    }
+
+    # Rewire SaveImage to use post-processed output
+    if save_node in wf:
+        for key, val in wf[save_node].get("inputs", {}).items():
+            if isinstance(val, list) and len(val) == 2 and val[0] == image_source_node and val[1] == 0:
+                wf[save_node]["inputs"][key] = ["32", 0]
+
+    debug_log(f"Post-processing injected: grain={grain}, temp={temperature}, sat={saturation}")
+    return "32"
 
 
 # ──────────────────────────────────────────────
@@ -290,6 +371,9 @@ def build_generate_workflow(params: dict) -> dict:
             if "feather" in node["inputs"]:
                 node["inputs"]["feather"] = fd_feather
 
+    # ── Post-processing: OpticalRealism + ColorCorrect ──
+    inject_post_processing(wf, image_source_node="15", save_node="16", params=params)
+
     return wf
 
 
@@ -377,6 +461,10 @@ def build_edit_workflow(params: dict) -> dict:
         if class_type == "FaceDetailer":
             node["inputs"]["seed"] = seed
 
+    # ── Post-processing: OpticalRealism + ColorCorrect ──
+    # img2img: FaceDetailer is node "16", SaveImage is node "17"
+    inject_post_processing(wf, image_source_node="16", save_node="17", params=params)
+
     return wf
 
 
@@ -417,6 +505,10 @@ def build_detailer_workflow(params: dict) -> dict:
 
         if class_type == "ImageScaleBy":
             node["inputs"]["scale_by"] = scale_by
+
+    # ── Post-processing: OpticalRealism + ColorCorrect ──
+    # detailer-upscale: ImageScaleBy is node "12", SaveImage is node "13"
+    inject_post_processing(wf, image_source_node="12", save_node="13", params=params)
 
     return wf
 
@@ -465,7 +557,9 @@ def handler(event: dict) -> dict:
                   "/runpod-volume/models/vae",
                   "/runpod-volume/models/loras",
                   "/runpod-volume/models/sams",
-                  "/runpod-volume/models/ultralytics/bbox"]:
+                  "/runpod-volume/models/ultralytics/bbox",
+                  "/runpod-volume/models/clip_vision",
+                  "/runpod-volume/models/xlabs/ipadapters"]:
             if os.path.isdir(d):
                 files = os.listdir(d)
                 debug_log(f"DIR {d}: {files}")

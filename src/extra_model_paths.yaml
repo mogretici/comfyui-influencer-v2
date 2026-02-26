@@ -17,8 +17,8 @@ network_volume:
 
 xlabs:
     base_path: /runpod-volume/models/xlabs
-    ipadapters: ipadapters
-    controlnets: controlnets
+    xlabs_ipadapters: ipadapters
+    xlabs_controlnets: controlnets
 
 insightface:
     base_path: /runpod-volume/models/insightface

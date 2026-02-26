@@ -1,9 +1,13 @@
-# AI-Toolkit (Ostris) — Flux 2 Dev LoRA Training Config
-# Run on RunPod A40 (48GB VRAM) for ~$0.30-1/training
+# kohya_ss — Flux 2 Dev LoRA Training Config (AAA Quality)
+# Run on RunPod A40/L40S (48GB VRAM)
 #
 # Usage:
-#   pip install ai-toolkit
-#   ai-toolkit train --config traindata/flux2_face_lora.yaml
+#   cd traindata && bash train_kohya.sh
+#
+# Key settings for maximum face fidelity:
+#   rank 64 (high capacity), alpha 32 (rank/2 for stability)
+#   lr 1e-4, cosine_with_restarts, 2200 steps
+#   22 images × 5 repeats × 2200 steps ≈ full coverage
 
 job: extension
 config:
@@ -16,12 +20,12 @@ config:
 
       network:
         type: lora
-        linear: 32          # LoRA rank (higher = more capacity)
-        linear_alpha: 32    # alpha = rank for stable training
+        linear: 64          # LoRA rank — high for face fidelity
+        linear_alpha: 32    # alpha = rank/2 for stable training
 
       save:
         dtype: float16
-        save_every: 250
+        save_every: 500
         max_step_saves_to_keep: 3
 
       datasets:
@@ -36,8 +40,8 @@ config:
             - 1024
 
       train:
-        batch_size: 4
-        steps: 1500
+        batch_size: 2
+        steps: 2200
         gradient_accumulation_steps: 1
         train_unet: true
         train_text_encoder: false
@@ -45,9 +49,10 @@ config:
         noise_scheduler: flowmatch
         optimizer: adamw8bit
         lr: 1e-4
-        lr_scheduler: cosine
+        lr_scheduler: cosine_with_restarts
         lr_scheduler_params:
-          T_max: 1500
+          T_max: 2200
+          eta_min: 1e-6
 
       model:
         name_or_path: black-forest-labs/FLUX.2-dev
@@ -56,7 +61,7 @@ config:
 
       sample:
         sampler: flowmatch
-        sample_every: 250
+        sample_every: 500
         width: 1024
         height: 1024
         prompts:

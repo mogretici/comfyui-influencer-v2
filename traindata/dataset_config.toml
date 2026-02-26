@@ -1,0 +1,19 @@
+# kohya_ss Dataset Config — Flux 2 Dev Face LoRA
+# 22 images with detailed captions for Mistral 3 encoder
+
+[general]
+shuffle_caption = false
+caption_extension = ".txt"
+keep_tokens = 1
+
+[[datasets]]
+resolution = 1024
+batch_size = 2
+enable_bucket = true
+bucket_reso_steps = 64
+min_bucket_reso = 512
+max_bucket_reso = 1024
+
+  [[datasets.subsets]]
+  image_dir = "images"
+  num_repeats = 5

@@ -1,5 +1,5 @@
 # ============================================================
-# ComfyUI + Flux 2 Dev — AI Influencer Pipeline v3
+# ComfyUI + Flux 2 Dev — AI Influencer Pipeline v4 (Optical Realism)
 # Target: RunPod Serverless (L40S/A40 48GB)
 # Image Size: ~5-8 GB (models on Network Volume)
 # ============================================================
@@ -39,6 +39,7 @@ RUN pip install --no-cache-dir \
     onnxruntime-gpu \
     timm facexlib ftfy \
     opencv-python-headless \
+    Pillow \
     runpod requests websocket-client
 
 # Stage 5: Custom Nodes
@@ -75,6 +76,14 @@ RUN cd /comfyui/custom_nodes && \
 # 5.6 GGUF-aware LoRA loader (fixes silent LoRA failure with GGUF quantized models)
 RUN cd /comfyui/custom_nodes && \
     git clone --depth 1 https://github.com/Repeerc/ComfyUI-GGUF-LoRA-Load.git
+
+# 5.7 Optical Realism — depth-aware grain, chromatic aberration, vignette, atmosphere
+RUN cd /comfyui/custom_nodes && \
+    git clone --depth 1 https://github.com/skatardude10/ComfyUI-Optical-Realism.git
+
+# 5.8 Post-processing — FilmGrain, ColorCorrect, ChromaticAberration, Vignette
+RUN cd /comfyui/custom_nodes && \
+    git clone --depth 1 https://github.com/EllangoK/ComfyUI-post-processing-nodes.git
 
 # Models are downloaded at runtime to Network Volume — not baked into image
 # See src/download-models.sh for the model download logic

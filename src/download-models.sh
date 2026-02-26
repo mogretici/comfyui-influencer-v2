@@ -5,10 +5,10 @@ set -euo pipefail
 # Subsequent runs skip already-downloaded files
 
 MODELS_DIR="/runpod-volume/models"
-MARKER="$MODELS_DIR/.download_complete_v3"
+MARKER="$MODELS_DIR/.download_complete_v5"
 
 if [ -f "$MARKER" ]; then
-    echo "[OK] Models already downloaded (marker v3 found)"
+    echo "[OK] Models already downloaded (marker v5 found)"
     exit 0
 fi
 
@@ -92,10 +92,16 @@ download "$MODELS_DIR/upscale_models/4x-UltraSharp.pth" \
     "https://huggingface.co/lokCX/4x-Ultrasharp/resolve/main/4x-UltraSharp.pth" \
     "4x-UltraSharp Upscaler"
 
-# 8. XLabs ControlNet OpenPose (~2.8GB)
+# 9. XLabs ControlNet OpenPose (~2.8GB)
 download "$MODELS_DIR/xlabs/controlnets/flux-openpose-controlnet.safetensors" \
     "https://huggingface.co/raulc0399/flux_dev_openpose_controlnet/resolve/main/model.safetensors" \
     "XLabs ControlNet OpenPose"
+
+# 10. DepthAnythingV2 for OpticalRealism post-processing (~350MB)
+# comfyui_controlnet_aux expects .pth in ckpts/depth-anything/Depth-Anything-V2-Large/
+download "$MODELS_DIR/controlnet_aux_ckpts/depth-anything/Depth-Anything-V2-Large/depth_anything_v2_vitl.pth" \
+    "https://huggingface.co/depth-anything/Depth-Anything-V2-Large/resolve/main/depth_anything_v2_vitl.pth" \
+    "DepthAnythingV2 ViT-L (OpticalRealism)"
 
 # Mark download complete
 touch "$MARKER"

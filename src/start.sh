@@ -2,7 +2,7 @@
 set -euo pipefail
 
 echo "============================================"
-echo " ComfyUI + Flux 2 Dev — AI Influencer v3"
+echo " ComfyUI + Flux 2 Dev — AI Influencer v4"
 echo " Starting container..."
 echo "============================================"
 
@@ -22,9 +22,11 @@ rm -f /runpod-volume/models/text_encoders/clip_l.safetensors
 rm -f /runpod-volume/models/vae/flux-ae.safetensors
 rm -f /runpod-volume/models/loras/flux_realism_lora.safetensors
 rm -f /runpod-volume/models/sams/mobile_sam.pt
-# Remove old marker so new models get downloaded
+# Remove old markers so new models get downloaded
 rm -f /runpod-volume/models/.download_complete_v2
 rm -f /runpod-volume/models/.download_complete_v1
+rm -f /runpod-volume/models/.download_complete_v3
+rm -f /runpod-volume/models/.download_complete_v4
 echo "[OK] Old model cleanup done"
 
 # ── Hot-update: use code from network volume if present ──
@@ -45,6 +47,10 @@ if [ -f /extra_model_paths.yaml ]; then
     cp /extra_model_paths.yaml /comfyui/extra_model_paths.yaml
     echo "[OK] Extra model paths configured (Network Volume)"
 fi
+
+# Set controlnet_aux ckpts path to network volume (persistent across cold starts)
+export AUX_ANNOTATOR_CKPTS_PATH=/runpod-volume/models/controlnet_aux_ckpts
+echo "[OK] controlnet_aux ckpts path: $AUX_ANNOTATOR_CKPTS_PATH"
 
 # Disable ComfyUI-Manager network calls (saves ~2min startup)
 export COMFYUI_MANAGER_MODE=local
