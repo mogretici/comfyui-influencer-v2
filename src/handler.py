@@ -598,7 +598,7 @@ def build_generate_workflow(params: dict) -> dict:
         wf["27"] = {
             "class_type": "PulidFluxInsightFaceLoader",
             "inputs": {
-                "provider": "GPU",
+                "provider": "CUDA",
             },
             "_meta": {"title": "InsightFace (PuLID)"},
         }
