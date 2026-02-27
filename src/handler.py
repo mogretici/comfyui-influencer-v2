@@ -513,6 +513,12 @@ def build_generate_workflow(params: dict) -> dict:
             debug_log(f"WARNING: LoRA file '{face_lora}' not found, skipping LoRA injection")
             skip_face_lora = True
 
+    # Auto-inject LoRA trigger word into prompt
+    trigger_word = params.get("trigger_word", "MGNPERSON")
+    if not skip_face_lora and trigger_word and trigger_word not in prompt:
+        prompt = f"{trigger_word}, {prompt}"
+        debug_log(f"Trigger word '{trigger_word}' injected into prompt")
+
     debug_log(f"build_generate: face_lora={face_lora!r}, strength={face_lora_strength}, skip={skip_face_lora}")
     debug_log(f"build_generate: face_mode={face_mode}, pulid_strength={pulid_strength}, ip_adapter={ip_adapter_strength}")
 
