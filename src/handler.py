@@ -11,9 +11,10 @@ Flux 1 Dev FP8 Architecture:
   - Text Encoder: DualCLIPLoader (CLIP-L + T5-XXL FP8, type: flux)
   - VAE: VAELoader (ae.safetensors)
   - Sampling: DetailDaemon → SamplerCustomAdvanced + BasicGuider
-  - LoRA: LoraLoader (native ComfyUI, rank-64 face LoRA)
+  - LoRA: LoraLoader (native ComfyUI, rank-128 face LoRA)
   - Face Identity: PuLID-Flux (87-91% similarity) or IP-Adapter v2
   - Pose/Depth/Canny: Shakker-Labs ControlNet Union Pro 2.0
+  - Hires Fix: 4x-UltraSharp upscale → second KSampler pass (denoise 0.35)
   - Post-processing: DepthAnythingV2 → OpticalRealism → ColorCorrect
 """
 
@@ -150,7 +151,7 @@ def inject_post_processing(wf: dict, image_source_node: str, save_node: str, par
     if not params.get("optical_realism", True):
         return image_source_node
 
-    grain = params.get("grain_intensity", 0.018)
+    grain = params.get("grain_intensity", 0.008)
     temperature = params.get("color_temperature", 6.0)
     saturation = params.get("color_saturation", 0.93)
 
@@ -223,7 +224,7 @@ def inject_detail_daemon(wf: dict, scheduler_node: str, sampler_node: str, param
     if not params.get("detail_daemon", True):
         return
 
-    detail_amount = params.get("detail_amount", 0.4)
+    detail_amount = params.get("detail_amount", 0.7)
 
     wf["40"] = {
         "class_type": "DetailDaemonSamplerNode",
@@ -449,6 +450,119 @@ def inject_upscale(wf: dict, image_source_node: str, params: dict):
 
 
 # ──────────────────────────────────────────────
+# Hires Fix: upscale + second sampling pass
+# ──────────────────────────────────────────────
+
+def inject_hires_fix(wf: dict, image_source_node: str, params: dict,
+                     model_node: str, cond_node: str, vae_node: str, seed: int) -> str:
+    """Inject hires fix: upscale → VAEEncode → second KSampler pass → VAEDecode.
+
+    Instead of just enlarging pixels, this runs a second sampling pass at the
+    upscaled resolution with low denoise to add real sampled detail — skin pores,
+    fabric texture, hair strands, jewelry facets.
+
+    Returns the final image node ID.
+    """
+    if not params.get("hires_fix", True):
+        return image_source_node
+
+    hires_denoise = params.get("hires_denoise", 0.35)
+    hires_steps = params.get("hires_steps", 12)
+    target_w = params.get("output_width", 1440)
+    target_h = params.get("output_height", 1800)
+
+    # Step 1: Upscale image with 4x-UltraSharp
+    wf["60"] = {
+        "class_type": "UpscaleModelLoader",
+        "inputs": {"model_name": "4x-UltraSharp.pth"},
+        "_meta": {"title": "4x-UltraSharp Loader (Hires)"},
+    }
+    wf["61"] = {
+        "class_type": "ImageUpscaleWithModel",
+        "inputs": {
+            "upscale_model": ["60", 0],
+            "image": [image_source_node, 0],
+        },
+        "_meta": {"title": "4x Upscale (Hires)"},
+    }
+    wf["62"] = {
+        "class_type": "ImageScale",
+        "inputs": {
+            "image": ["61", 0],
+            "width": target_w,
+            "height": target_h,
+            "upscale_method": "lanczos",
+            "crop": "center",
+        },
+        "_meta": {"title": f"Scale to {target_w}x{target_h} (Hires)"},
+    }
+
+    # Step 2: VAEEncode upscaled image back to latent
+    wf["70"] = {
+        "class_type": "VAEEncode",
+        "inputs": {
+            "pixels": ["62", 0],
+            "vae": [vae_node, 0],
+        },
+        "_meta": {"title": "VAEEncode (Hires)"},
+    }
+
+    # Step 3: Second sampling pass at low denoise
+    wf["71"] = {
+        "class_type": "BasicScheduler",
+        "inputs": {
+            "model": [model_node, 0],
+            "scheduler": "normal",
+            "steps": hires_steps,
+            "denoise": hires_denoise,
+        },
+        "_meta": {"title": f"Scheduler (Hires, denoise={hires_denoise})"},
+    }
+    wf["72"] = {
+        "class_type": "RandomNoise",
+        "inputs": {"noise_seed": seed + 1},
+        "_meta": {"title": "Noise (Hires)"},
+    }
+    wf["73"] = {
+        "class_type": "BasicGuider",
+        "inputs": {
+            "model": [model_node, 0],
+            "conditioning": [cond_node, 0],
+        },
+        "_meta": {"title": "Guider (Hires)"},
+    }
+    wf["74"] = {
+        "class_type": "KSamplerSelect",
+        "inputs": {"sampler_name": "euler"},
+        "_meta": {"title": "Sampler (Hires)"},
+    }
+    wf["75"] = {
+        "class_type": "SamplerCustomAdvanced",
+        "inputs": {
+            "noise": ["72", 0],
+            "guider": ["73", 0],
+            "sampler": ["74", 0],
+            "sigmas": ["71", 0],
+            "latent_image": ["70", 0],
+        },
+        "_meta": {"title": "SamplerCustomAdvanced (Hires)"},
+    }
+
+    # Step 4: Decode hires latent back to image
+    wf["76"] = {
+        "class_type": "VAEDecode",
+        "inputs": {
+            "samples": ["75", 0],
+            "vae": [vae_node, 0],
+        },
+        "_meta": {"title": "VAEDecode (Hires)"},
+    }
+
+    debug_log(f"Hires fix injected: denoise={hires_denoise}, steps={hires_steps}, target={target_w}x{target_h}")
+    return "76"
+
+
+# ──────────────────────────────────────────────
 # Workflow builders — Flux 1 Dev FP8 Architecture
 # ──────────────────────────────────────────────
 
@@ -488,8 +602,8 @@ def build_generate_workflow(params: dict) -> dict:
     # Core prompt
     prompt = params.get("prompt",
         "Close-up portrait photograph of a 25-year-old woman with natural olive skin, "
-        "subtle smile, hazel eyes. Shot on Canon EOS R5, 85mm f/1.4 lens, natural diffused light, "
-        "shallow depth of field. Visible skin pores and subtle freckles. "
+        "subtle smile, hazel eyes. Shot on Canon EOS R5, 85mm f/1.4 lens, natural diffused light. "
+        "Visible skin pores and subtle freckles, sharp details throughout. "
         "No makeup or minimal makeup, hair slightly messy. "
         "Neutral color grading, soft bokeh background."
     )
@@ -499,7 +613,7 @@ def build_generate_workflow(params: dict) -> dict:
     face_lora_strength = params.get("face_lora_strength", 0.0)
     ip_adapter_strength = params.get("ip_adapter_strength", 0.5)
     face_mode = params.get("face_mode", "pulid")  # "pulid" or "ip_adapter"
-    pulid_strength = params.get("pulid_strength", 0.9)
+    pulid_strength = params.get("pulid_strength", 1.0)
     skip_face_lora = not face_lora or face_lora_strength == 0.0
 
     # Check if LoRA file actually exists on disk
@@ -718,8 +832,11 @@ def build_generate_workflow(params: dict) -> dict:
             if "feather" in node["inputs"]:
                 node["inputs"]["feather"] = fd_feather
 
-    # ── Upscale (optional) ──
-    last_image = inject_upscale(wf, image_source_node="15", params=params)
+    # ── Hires Fix (upscale + second pass) or simple upscale ──
+    if params.get("hires_fix", True):
+        last_image = inject_hires_fix(wf, "15", params, current_model, positive_node, "3", seed)
+    else:
+        last_image = inject_upscale(wf, image_source_node="15", params=params)
 
     # ── Post-processing: OpticalRealism + ColorCorrect ──
     inject_post_processing(wf, image_source_node=last_image, save_node="16", params=params)
