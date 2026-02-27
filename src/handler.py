@@ -234,10 +234,11 @@ def inject_detail_daemon(wf: dict, scheduler_node: str, sampler_node: str, param
             "end": 0.8,
             "bias": 0.5,
             "exponent": 1.0,
-            "start_offset": 0,
-            "end_offset": 0,
+            "start_offset": 0.0,
+            "end_offset": 0.0,
             "fade": 0.0,
             "smooth": True,
+            "cfg_scale_override": 0.0,
         },
         "_meta": {"title": "Detail Daemon (Skin Texture)"},
     }
