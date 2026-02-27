@@ -1,17 +1,19 @@
 """
-RunPod Serverless Handler — ComfyUI + Flux 1 Dev AI Influencer Pipeline v5
+RunPod Serverless Handler — ComfyUI + Flux 1 Dev FP8 AI Influencer Pipeline v6
 
 Endpoints:
-  - generate: Text-to-image with Face LoRA + IP-Adapter + FaceDetailer + Optical Realism
+  - generate: Text-to-image with Face LoRA + PuLID/IP-Adapter + ControlNet + FaceDetailer + Upscale + Optical Realism
   - edit: Image-to-image scene/outfit change + Optical Realism
   - detailer: FaceDetailer + 4K upscale + Optical Realism
 
-Flux 1 Dev Architecture:
-  - UNet: UnetLoaderGGUF (flux1-dev-Q8_0.gguf)
+Flux 1 Dev FP8 Architecture:
+  - UNet: UNETLoader (flux1-dev-fp8.safetensors, weight_dtype: fp8_e4m3fn)
   - Text Encoder: DualCLIPLoader (CLIP-L + T5-XXL FP8, type: flux)
   - VAE: VAELoader (ae.safetensors)
-  - Sampling: SamplerCustomAdvanced + BasicGuider
-  - LoRA: UnetGGUFLora (GGUF-aware, kohya rank-64 face LoRA)
+  - Sampling: DetailDaemon → SamplerCustomAdvanced + BasicGuider
+  - LoRA: LoraLoader (native ComfyUI, rank-64 face LoRA)
+  - Face Identity: PuLID-Flux (87-91% similarity) or IP-Adapter v2
+  - Pose/Depth/Canny: Shakker-Labs ControlNet Union Pro 2.0
   - Post-processing: DepthAnythingV2 → OpticalRealism → ColorCorrect
 """
 
@@ -164,38 +166,35 @@ def inject_post_processing(wf: dict, image_source_node: str, save_node: str, par
     }
 
     # OpticalRealism — physics-based camera simulation
-    # Tuned for Instagram-grade photorealism: subtle sensor noise,
-    # gentle lens effects, natural atmosphere
     wf["31"] = {
         "class_type": "OpticalRealism",
         "inputs": {
             "image": [image_source_node, 0],
             "depth_map": ["30", 0],
             "atmosphere_enabled": True,
-            "haze_strength": 0.10,            # Lighter haze (was 0.15) — less fog, more clarity
-            "lift_blacks": 0.06,              # Slightly lifted blacks (real phone cameras)
+            "haze_strength": 0.10,
+            "lift_blacks": 0.06,
             "depth_offset": 0.0,
-            "light_wrap_strength": 0.15,      # Subtle light wrap (was 0.20)
-            "chromatic_aberration": 0.004,    # Slightly more CA (real lenses have this)
-            "vignette_intensity": 0.10,       # Gentle corner darkening (was 0.12)
-            "grain_power": grain,             # ISO 200-400 sensor noise
-            "monochrome_grain": True,         # Real sensor noise is luminance-only
-            "highlight_rolloff": 0.04,        # Natural highlight compression
+            "light_wrap_strength": 0.15,
+            "chromatic_aberration": 0.004,
+            "vignette_intensity": 0.10,
+            "grain_power": grain,
+            "monochrome_grain": True,
+            "highlight_rolloff": 0.04,
         },
         "_meta": {"title": "Optical Realism"},
     }
 
     # Color grading — warm shift + slight desaturation for natural skin tones
-    # AI images are typically over-saturated and too cool
     wf["32"] = {
         "class_type": "ColorCorrect",
         "inputs": {
             "image": ["31", 0],
-            "temperature": temperature,       # Warm shift for natural skin
+            "temperature": temperature,
             "hue": 0.0,
             "brightness": 0.0,
-            "contrast": 1.04,                 # Very subtle contrast (was 1.05)
-            "saturation": saturation,          # 7% desaturation (AI images over-saturate)
+            "contrast": 1.04,
+            "saturation": saturation,
             "gamma": 1.0,
         },
         "_meta": {"title": "Color Grading"},
@@ -212,28 +211,276 @@ def inject_post_processing(wf: dict, image_source_node: str, save_node: str, par
 
 
 # ──────────────────────────────────────────────
-# Workflow builders — Flux 1 Dev Architecture
+# Detail Daemon: micro-detail injection
+# ──────────────────────────────────────────────
+
+def inject_detail_daemon(wf: dict, scheduler_node: str, sampler_node: str, params: dict):
+    """Inject DetailDaemonSamplerNode between BasicScheduler and SamplerCustomAdvanced.
+
+    Modifies the sigma schedule to add micro-detail (skin pores, hair strands, fabric texture).
+    Zero VRAM/inference time overhead — only reshapes sigma array once before sampling.
+    """
+    if not params.get("detail_daemon", True):
+        return
+
+    detail_amount = params.get("detail_amount", 0.4)
+
+    wf["40"] = {
+        "class_type": "DetailDaemonSamplerNode",
+        "inputs": {
+            "sampler": [sampler_node, 0],  # KSamplerSelect output
+            "detail_amount": detail_amount,
+            "start": 0.2,
+            "end": 0.8,
+            "bias": 0.5,
+            "exponent": 1.0,
+            "start_offset": 0,
+            "end_offset": 0,
+            "fade": 0.0,
+            "smooth": True,
+        },
+        "_meta": {"title": "Detail Daemon (Skin Texture)"},
+    }
+
+    # Rewire SamplerCustomAdvanced: sampler input → Detail Daemon output
+    for node_id, node in wf.items():
+        if node.get("class_type") == "SamplerCustomAdvanced":
+            if node["inputs"].get("sampler") == [sampler_node, 0]:
+                node["inputs"]["sampler"] = ["40", 0]
+
+    debug_log(f"Detail Daemon injected: detail_amount={detail_amount}")
+
+
+# ──────────────────────────────────────────────
+# ControlNet Union Pro 2.0: Pose/Depth/Canny
+# ──────────────────────────────────────────────
+
+def inject_controlnet(wf: dict, positive_node: str, negative_node: str, params: dict):
+    """Inject Shakker-Labs ControlNet Union Pro 2.0 for pose/depth/canny control.
+
+    Uses ControlNetApplySD3 (native ComfyUI node) — modifies conditioning, not model weights.
+    This is compatible with both FP8 and GGUF base models.
+
+    Returns updated (positive_node, negative_node) IDs for downstream use.
+    """
+    # Check which control type is provided
+    pose_image_b64 = params.get("pose_image")
+    depth_image_b64 = params.get("depth_image")
+    canny_image_b64 = params.get("canny_image")
+
+    if not any([pose_image_b64, depth_image_b64, canny_image_b64]):
+        return positive_node, negative_node
+
+    current_pos = positive_node
+    current_neg = negative_node
+    cn_node_counter = 50
+
+    # Load ControlNet model (shared across all control types)
+    wf["52"] = {
+        "class_type": "ControlNetLoader",
+        "inputs": {
+            "control_net_name": "flux-controlnet-union-pro-2.0.safetensors",
+        },
+        "_meta": {"title": "ControlNet Union Pro 2.0"},
+    }
+
+    # --- Pose Control ---
+    if pose_image_b64:
+        pose_filename = upload_reference_image(pose_image_b64)
+        cn_strength = params.get("controlnet_strength", 0.25)
+
+        wf[str(cn_node_counter)] = {
+            "class_type": "LoadImage",
+            "inputs": {"image": pose_filename},
+            "_meta": {"title": "Pose Reference Image"},
+        }
+        wf[str(cn_node_counter + 1)] = {
+            "class_type": "DWPreprocessor",
+            "inputs": {
+                "image": [str(cn_node_counter), 0],
+                "detect_hand": "enable",
+                "detect_body": "enable",
+                "detect_face": "enable",
+                "resolution": 1024,
+            },
+            "_meta": {"title": "DWPose Preprocessor"},
+        }
+        wf[str(cn_node_counter + 2)] = {
+            "class_type": "ControlNetApplySD3",
+            "inputs": {
+                "positive": [current_pos, 0],
+                "negative": [current_neg, 0],
+                "control_net": ["52", 0],
+                "vae": ["3", 0],
+                "image": [str(cn_node_counter + 1), 0],
+                "strength": cn_strength,
+                "start_percent": 0.0,
+                "end_percent": 0.5,
+            },
+            "_meta": {"title": "Apply ControlNet (Pose)"},
+        }
+        current_pos = str(cn_node_counter + 2)
+        current_neg = str(cn_node_counter + 2)
+        cn_node_counter += 3
+        debug_log(f"ControlNet Pose injected: strength={cn_strength}")
+
+    # --- Depth Control ---
+    if depth_image_b64:
+        depth_filename = upload_reference_image(depth_image_b64)
+        depth_strength = params.get("depth_strength", 0.3)
+
+        wf[str(cn_node_counter)] = {
+            "class_type": "LoadImage",
+            "inputs": {"image": depth_filename},
+            "_meta": {"title": "Depth Reference Image"},
+        }
+        wf[str(cn_node_counter + 1)] = {
+            "class_type": "DepthAnythingV2Preprocessor",
+            "inputs": {
+                "image": [str(cn_node_counter), 0],
+                "ckpt_name": "depth_anything_v2_vitl.pth",
+                "resolution": 1024,
+            },
+            "_meta": {"title": "Depth Preprocessor (ControlNet)"},
+        }
+        wf[str(cn_node_counter + 2)] = {
+            "class_type": "ControlNetApplySD3",
+            "inputs": {
+                "positive": [current_pos, 0],
+                "negative": [current_neg, 0],
+                "control_net": ["52", 0],
+                "vae": ["3", 0],
+                "image": [str(cn_node_counter + 1), 0],
+                "strength": depth_strength,
+                "start_percent": 0.0,
+                "end_percent": 0.6,
+            },
+            "_meta": {"title": "Apply ControlNet (Depth)"},
+        }
+        current_pos = str(cn_node_counter + 2)
+        current_neg = str(cn_node_counter + 2)
+        cn_node_counter += 3
+        debug_log(f"ControlNet Depth injected: strength={depth_strength}")
+
+    # --- Canny/Edge Control ---
+    if canny_image_b64:
+        canny_filename = upload_reference_image(canny_image_b64)
+        canny_strength = params.get("canny_strength", 0.3)
+
+        wf[str(cn_node_counter)] = {
+            "class_type": "LoadImage",
+            "inputs": {"image": canny_filename},
+            "_meta": {"title": "Canny Reference Image"},
+        }
+        wf[str(cn_node_counter + 1)] = {
+            "class_type": "CannyEdgePreprocessor",
+            "inputs": {
+                "image": [str(cn_node_counter), 0],
+                "low_threshold": 100,
+                "high_threshold": 200,
+                "resolution": 1024,
+            },
+            "_meta": {"title": "Canny Edge Preprocessor"},
+        }
+        wf[str(cn_node_counter + 2)] = {
+            "class_type": "ControlNetApplySD3",
+            "inputs": {
+                "positive": [current_pos, 0],
+                "negative": [current_neg, 0],
+                "control_net": ["52", 0],
+                "vae": ["3", 0],
+                "image": [str(cn_node_counter + 1), 0],
+                "strength": canny_strength,
+                "start_percent": 0.0,
+                "end_percent": 0.5,
+            },
+            "_meta": {"title": "Apply ControlNet (Canny)"},
+        }
+        current_pos = str(cn_node_counter + 2)
+        current_neg = str(cn_node_counter + 2)
+        debug_log(f"ControlNet Canny injected: strength={canny_strength}")
+
+    return current_pos, current_neg
+
+
+# ──────────────────────────────────────────────
+# Upscale: 4x-UltraSharp + Scale to target
+# ──────────────────────────────────────────────
+
+def inject_upscale(wf: dict, image_source_node: str, params: dict):
+    """Inject 4x-UltraSharp upscale + ImageScale to target Instagram dimensions.
+
+    Returns the final image node ID.
+    """
+    if not params.get("upscale", False):
+        return image_source_node
+
+    target_w = params.get("output_width", 1440)
+    target_h = params.get("output_height", 1800)
+
+    wf["60"] = {
+        "class_type": "UpscaleModelLoader",
+        "inputs": {"model_name": "4x-UltraSharp.pth"},
+        "_meta": {"title": "4x-UltraSharp Loader"},
+    }
+    wf["61"] = {
+        "class_type": "ImageUpscaleWithModel",
+        "inputs": {
+            "upscale_model": ["60", 0],
+            "image": [image_source_node, 0],
+        },
+        "_meta": {"title": "4x Upscale"},
+    }
+    wf["62"] = {
+        "class_type": "ImageScale",
+        "inputs": {
+            "image": ["61", 0],
+            "width": target_w,
+            "height": target_h,
+            "upscale_method": "lanczos",
+            "crop": "center",
+        },
+        "_meta": {"title": f"Scale to {target_w}x{target_h}"},
+    }
+
+    debug_log(f"Upscale injected: target={target_w}x{target_h}")
+    return "62"
+
+
+# ──────────────────────────────────────────────
+# Workflow builders — Flux 1 Dev FP8 Architecture
 # ──────────────────────────────────────────────
 
 def build_generate_workflow(params: dict) -> dict:
-    """Build txt2img workflow with Face LoRA + IP-Adapter + FaceDetailer.
+    """Build txt2img workflow with Face LoRA + PuLID/IP-Adapter + ControlNet + FaceDetailer + Upscale.
 
-    Flux 1 Dev node structure:
-      1  UnetLoaderGGUF → 2 DualCLIPLoader → 3 VAELoader
+    Flux 1 Dev FP8 node structure:
+      1  UNETLoader → 2 DualCLIPLoader → 3 VAELoader
       4  CLIPTextEncode(positive) → 6 BasicGuider
       5  RandomNoise → 10 SamplerCustomAdvanced
-      7  KSamplerSelect → 10
+      7  KSamplerSelect → 40 DetailDaemon → 10
       8  BasicScheduler → 10
       9  EmptySD3LatentImage → 10
       10 SamplerCustomAdvanced → 11 VAEDecode → 15 FaceDetailer → 16 SaveImage
 
-    Face LoRA (optional, GGUF-aware):
-      1b UnetGGUFLora → model replaces node 1 output in guider/scheduler/facedetailer
+    Face LoRA (optional, native ComfyUI):
+      1b LoraLoader → model+clip replaces node 1/2 output in downstream nodes
 
-    IP-Adapter (optional, requires reference_image):
-      20 LoadImage (ref) → 22 ApplyFluxIPAdapter
+    PuLID (optional, requires reference_image + face_mode="pulid"):
+      20 LoadImage → 28 ApplyPulidFlux
+      25 PulidFluxModelLoader → 28
+      26 PulidFluxEvaClipLoader → 28
+      27 PulidFluxInsightFaceLoader → 28
+
+    IP-Adapter (optional, requires reference_image + face_mode="ip_adapter"):
+      20 LoadImage → 22 ApplyFluxIPAdapter
       21 LoadFluxIPAdapter → 22
-      22 ApplyFluxIPAdapter → replaces model source for downstream nodes
+
+    ControlNet (optional, requires pose_image/depth_image/canny_image):
+      50+ DWPreprocessor/DepthAnything/Canny → ControlNetApplySD3
+
+    Upscale (optional):
+      60 UpscaleModelLoader → 61 ImageUpscaleWithModel → 62 ImageScale
     """
     wf = load_workflow("txt2img-flux1")
 
@@ -250,6 +497,8 @@ def build_generate_workflow(params: dict) -> dict:
     face_lora = params.get("face_lora", "")
     face_lora_strength = params.get("face_lora_strength", 0.0)
     ip_adapter_strength = params.get("ip_adapter_strength", 0.5)
+    face_mode = params.get("face_mode", "pulid")  # "pulid" or "ip_adapter"
+    pulid_strength = params.get("pulid_strength", 0.9)
     skip_face_lora = not face_lora or face_lora_strength == 0.0
 
     # Check if LoRA file actually exists on disk
@@ -264,7 +513,7 @@ def build_generate_workflow(params: dict) -> dict:
             skip_face_lora = True
 
     debug_log(f"build_generate: face_lora={face_lora!r}, strength={face_lora_strength}, skip={skip_face_lora}")
-    debug_log(f"build_generate: ip_adapter={ip_adapter_strength}")
+    debug_log(f"build_generate: face_mode={face_mode}, pulid_strength={pulid_strength}, ip_adapter={ip_adapter_strength}")
 
     # Generation parameters
     width = params.get("width", 1024)
@@ -278,18 +527,24 @@ def build_generate_workflow(params: dict) -> dict:
     fd_denoise = params.get("face_detailer_denoise", 0.35)
     fd_feather = params.get("face_feather", 15)
 
-    # ── Inject Face LoRA node if provided (GGUF-aware) ──
+    # Track current model and clip sources for rewiring
+    current_model = "1"
+    current_clip = "2"
+
+    # ── Inject Face LoRA node if provided (native ComfyUI LoraLoader) ──
     if not skip_face_lora:
         wf["1b"] = {
-            "class_type": "UnetGGUFLora",
+            "class_type": "LoraLoader",
             "inputs": {
-                "unet_model": ["1", 0],
+                "model": ["1", 0],
+                "clip": ["2", 0],
                 "lora_name": face_lora,
                 "strength_model": face_lora_strength,
+                "strength_clip": face_lora_strength,
             },
-            "_meta": {"title": "Face LoRA (GGUF)"},
+            "_meta": {"title": "Face LoRA"},
         }
-        # Rewire: all nodes that reference model from "1" should now use "1b"
+        # Rewire: all nodes that reference model from "1" → "1b"
         for node_id, node in wf.items():
             if node_id == "1b":
                 continue
@@ -297,13 +552,76 @@ def build_generate_workflow(params: dict) -> dict:
             for key, val in inputs.items():
                 if isinstance(val, list) and len(val) == 2 and val[0] == "1" and val[1] == 0:
                     inputs[key] = ["1b", 0]
+        # Also rewire clip references from "2" → "1b" output 1
+        for node_id, node in wf.items():
+            if node_id == "1b":
+                continue
+            inputs = node.get("inputs", {})
+            for key, val in inputs.items():
+                if isinstance(val, list) and len(val) == 2 and val[0] == "2" and val[1] == 0:
+                    inputs[key] = ["1b", 1]
+        current_model = "1b"
+        current_clip = "1b"  # output index 1
 
-    # ── Inject IP-Adapter nodes if reference image provided ──
+    # ── Inject face identity: PuLID or IP-Adapter ──
     ref_filename = params.get("_ref_filename")
-    if ref_filename and ip_adapter_strength > 0:
-        # Determine model source: "1b" if LoRA active, "1" if not
-        model_source = "1b" if not skip_face_lora else "1"
 
+    if ref_filename and face_mode == "pulid":
+        # LoadImage for reference photo
+        wf["20"] = {
+            "class_type": "LoadImage",
+            "inputs": {"image": ref_filename},
+            "_meta": {"title": "Reference Face (PuLID)"},
+        }
+        # PuLID model loader
+        wf["25"] = {
+            "class_type": "PulidFluxModelLoader",
+            "inputs": {
+                "pulid_file": "pulid_flux_v0.9.1.safetensors",
+            },
+            "_meta": {"title": "PuLID Model Loader"},
+        }
+        # EVA-CLIP loader
+        wf["26"] = {
+            "class_type": "PulidFluxEvaClipLoader",
+            "inputs": {},
+            "_meta": {"title": "EVA-CLIP Loader (PuLID)"},
+        }
+        # InsightFace loader (antelopev2, already downloaded)
+        wf["27"] = {
+            "class_type": "PulidFluxInsightFaceLoader",
+            "inputs": {
+                "provider": "GPU",
+            },
+            "_meta": {"title": "InsightFace (PuLID)"},
+        }
+        # Apply PuLID
+        wf["28"] = {
+            "class_type": "ApplyPulidFlux",
+            "inputs": {
+                "model": [current_model, 0],
+                "pulid_flux": ["25", 0],
+                "eva_clip": ["26", 0],
+                "face_analysis": ["27", 0],
+                "image": ["20", 0],
+                "weight": pulid_strength,
+                "start_at": 0.0,
+                "end_at": 1.0,
+            },
+            "_meta": {"title": "Apply PuLID-Flux"},
+        }
+        # Rewire downstream: current_model → "28"
+        for node_id, node in wf.items():
+            if node_id in ("1b", "20", "25", "26", "27", "28"):
+                continue
+            inputs = node.get("inputs", {})
+            for key, val in inputs.items():
+                if isinstance(val, list) and len(val) == 2 and val[0] == current_model and val[1] == 0:
+                    inputs[key] = ["28", 0]
+        current_model = "28"
+        debug_log(f"PuLID injected: ref={ref_filename}, weight={pulid_strength}")
+
+    elif ref_filename and face_mode == "ip_adapter" and ip_adapter_strength > 0:
         # LoadImage for reference photo
         wf["20"] = {
             "class_type": "LoadImage",
@@ -324,22 +642,46 @@ def build_generate_workflow(params: dict) -> dict:
         wf["22"] = {
             "class_type": "ApplyFluxIPAdapter",
             "inputs": {
-                "model": [model_source, 0],
+                "model": [current_model, 0],
                 "ip_adapter_flux": ["21", 0],
                 "image": ["20", 0],
                 "ip_scale": ip_adapter_strength,
             },
             "_meta": {"title": "Apply IP-Adapter"},
         }
-        # Rewire downstream nodes from model_source to "22"
+        # Rewire downstream nodes from current_model to "22"
         for node_id, node in wf.items():
             if node_id in ("1b", "20", "21", "22"):
                 continue
             inputs = node.get("inputs", {})
             for key, val in inputs.items():
-                if isinstance(val, list) and len(val) == 2 and val[0] == model_source and val[1] == 0:
+                if isinstance(val, list) and len(val) == 2 and val[0] == current_model and val[1] == 0:
                     inputs[key] = ["22", 0]
-        debug_log(f"IP-Adapter injected: ref={ref_filename}, scale={ip_adapter_strength}, model_source={model_source}")
+        current_model = "22"
+        debug_log(f"IP-Adapter injected: ref={ref_filename}, scale={ip_adapter_strength}")
+
+    # ── Inject ControlNet (pose/depth/canny) ──
+    positive_node = "4"   # CLIPTextEncode positive
+    negative_node = "14"  # CLIPTextEncode negative
+
+    positive_node, negative_node = inject_controlnet(wf, positive_node, negative_node, params)
+
+    # Rewire BasicGuider conditioning if ControlNet modified it
+    if positive_node != "4":
+        for node_id, node in wf.items():
+            if node.get("class_type") == "BasicGuider":
+                if node["inputs"].get("conditioning") == ["4", 0]:
+                    node["inputs"]["conditioning"] = [positive_node, 0]
+        # Also rewire FaceDetailer positive/negative
+        for node_id, node in wf.items():
+            if node.get("class_type") == "FaceDetailer":
+                if node["inputs"].get("positive") == ["4", 0]:
+                    node["inputs"]["positive"] = [positive_node, 0]
+                if node["inputs"].get("negative") == ["14", 0]:
+                    node["inputs"]["negative"] = [negative_node, 1]
+
+    # ── Inject Detail Daemon ──
+    inject_detail_daemon(wf, scheduler_node="8", sampler_node="7", params=params)
 
     # ── Apply parameters to workflow nodes ──
     for node_id, node in wf.items():
@@ -362,11 +704,6 @@ def build_generate_workflow(params: dict) -> dict:
             node["inputs"]["width"] = width
             node["inputs"]["height"] = height
 
-        # IP-Adapter strength
-        if "ipadapter" in class_type.lower() or "ip_adapter" in class_type.lower():
-            if "strength" in node.get("inputs", {}):
-                node["inputs"]["strength"] = ip_adapter_strength
-
         # FaceDetailer
         if class_type == "FaceDetailer":
             node["inputs"]["denoise"] = fd_denoise
@@ -374,8 +711,11 @@ def build_generate_workflow(params: dict) -> dict:
             if "feather" in node["inputs"]:
                 node["inputs"]["feather"] = fd_feather
 
+    # ── Upscale (optional) ──
+    last_image = inject_upscale(wf, image_source_node="15", params=params)
+
     # ── Post-processing: OpticalRealism + ColorCorrect ──
-    inject_post_processing(wf, image_source_node="15", save_node="16", params=params)
+    inject_post_processing(wf, image_source_node=last_image, save_node="16", params=params)
 
     return wf
 
@@ -383,7 +723,7 @@ def build_generate_workflow(params: dict) -> dict:
 def build_edit_workflow(params: dict) -> dict:
     """Build img2img workflow for scene/outfit changes.
 
-    Same Flux 1 Dev node structure as generate, but:
+    Same Flux 1 Dev FP8 node structure as generate, but:
       - LoadImage → VAEEncode replaces EmptySD3LatentImage
       - BasicScheduler denoise < 1.0 (default 0.6)
       - FaceDetailer included
@@ -420,16 +760,18 @@ def build_edit_workflow(params: dict) -> dict:
     if not input_filename:
         raise ValueError("input_image is required for edit action")
 
-    # ── Inject Face LoRA node if provided (GGUF-aware) ──
+    # ── Inject Face LoRA node if provided (native ComfyUI LoraLoader) ──
     if not skip_face_lora:
         wf["1b"] = {
-            "class_type": "UnetGGUFLora",
+            "class_type": "LoraLoader",
             "inputs": {
-                "unet_model": ["1", 0],
+                "model": ["1", 0],
+                "clip": ["2", 0],
                 "lora_name": face_lora,
                 "strength_model": face_lora_strength,
+                "strength_clip": face_lora_strength,
             },
-            "_meta": {"title": "Face LoRA (GGUF)"},
+            "_meta": {"title": "Face LoRA"},
         }
         for node_id, node in wf.items():
             if node_id == "1b":
@@ -438,6 +780,12 @@ def build_edit_workflow(params: dict) -> dict:
             for key, val in inputs.items():
                 if isinstance(val, list) and len(val) == 2 and val[0] == "1" and val[1] == 0:
                     inputs[key] = ["1b", 0]
+            for key, val in inputs.items():
+                if isinstance(val, list) and len(val) == 2 and val[0] == "2" and val[1] == 0:
+                    inputs[key] = ["1b", 1]
+
+    # ── Inject Detail Daemon ──
+    inject_detail_daemon(wf, scheduler_node="10", sampler_node="9", params=params)
 
     # ── Apply parameters to workflow nodes ──
     for node_id, node in wf.items():
@@ -464,9 +812,11 @@ def build_edit_workflow(params: dict) -> dict:
         if class_type == "FaceDetailer":
             node["inputs"]["seed"] = seed
 
+    # ── Upscale (optional) ──
+    last_image = inject_upscale(wf, image_source_node="16", params=params)
+
     # ── Post-processing: OpticalRealism + ColorCorrect ──
-    # img2img: FaceDetailer is node "16", SaveImage is node "17"
-    inject_post_processing(wf, image_source_node="16", save_node="17", params=params)
+    inject_post_processing(wf, image_source_node=last_image, save_node="17", params=params)
 
     return wf
 
@@ -475,7 +825,7 @@ def build_detailer_workflow(params: dict) -> dict:
     """Build FaceDetailer + upscale workflow.
 
     Node structure:
-      1 UnetLoaderGGUF → 9 FaceDetailer
+      1 UNETLoader → 9 FaceDetailer
       4 LoadImage → 9 FaceDetailer → 11 ImageUpscaleWithModel → 12 ImageScaleBy → 13 SaveImage
     """
     wf = load_workflow("detailer-upscale-flux1")
@@ -510,7 +860,6 @@ def build_detailer_workflow(params: dict) -> dict:
             node["inputs"]["scale_by"] = scale_by
 
     # ── Post-processing: OpticalRealism + ColorCorrect ──
-    # detailer-upscale: ImageScaleBy is node "12", SaveImage is node "13"
     inject_post_processing(wf, image_source_node="12", save_node="13", params=params)
 
     return wf
@@ -556,13 +905,17 @@ def handler(event: dict) -> dict:
 
         # Debug: check model directories
         for d in ["/runpod-volume/models/text_encoders",
+                  "/runpod-volume/models/diffusion_models",
                   "/runpod-volume/models/unet",
                   "/runpod-volume/models/vae",
                   "/runpod-volume/models/loras",
                   "/runpod-volume/models/sams",
                   "/runpod-volume/models/ultralytics/bbox",
                   "/runpod-volume/models/clip_vision",
-                  "/runpod-volume/models/xlabs/ipadapters"]:
+                  "/runpod-volume/models/xlabs/ipadapters",
+                  "/runpod-volume/models/controlnet",
+                  "/runpod-volume/models/pulid",
+                  "/runpod-volume/models/clip"]:
             if os.path.isdir(d):
                 files = os.listdir(d)
                 debug_log(f"DIR {d}: {files}")
@@ -576,7 +929,7 @@ def handler(event: dict) -> dict:
                 debug_log(f"extra_model_paths.yaml:\n{f.read()}")
 
         # Debug: ask ComfyUI what models it sees
-        for node_type in ["UnetLoaderGGUF", "DualCLIPLoader", "VAELoader"]:
+        for node_type in ["UNETLoader", "DualCLIPLoader", "VAELoader"]:
             try:
                 resp = urllib.request.urlopen(f"{COMFYUI_URL}/object_info/{node_type}", timeout=10)
                 info = json.loads(resp.read())
@@ -626,7 +979,7 @@ def handler(event: dict) -> dict:
         if params.get("face_lora") and not params.get("face_lora_strength"):
             params["face_lora_strength"] = 0.85
 
-        # Upload reference image for IP-Adapter if provided
+        # Upload reference image for PuLID/IP-Adapter if provided
         ref_image_b64 = params.get("reference_image")
         ref_filename = None
         if ref_image_b64:
@@ -651,11 +1004,8 @@ def handler(event: dict) -> dict:
         # Debug: log key workflow nodes
         for node_id, node in workflow.items():
             ct = node.get("class_type", "")
-            if any(k in ct.lower() for k in ["unet", "clip", "vae", "lora", "sam", "ultralytics", "guider", "scheduler", "sampler", "ipadapter", "ip_adapter"]):
+            if any(k in ct.lower() for k in ["unet", "clip", "vae", "lora", "sam", "ultralytics", "guider", "scheduler", "sampler", "ipadapter", "ip_adapter", "pulid", "controlnet", "detail", "upscale"]):
                 debug_log(f"Node {node_id} ({ct}): {json.dumps(node.get('inputs', {}))[:200]}")
-
-        # Note: IP-Adapter reference image injection is now handled inside build_generate_workflow()
-        # via params["_ref_filename"] — no need for post-hoc LoadImage search
 
         # Queue and wait
         debug_log("Queueing workflow...")

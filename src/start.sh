@@ -15,8 +15,8 @@ fi
 
 echo "[OK] Network Volume mounted at /runpod-volume"
 
-# ── Clean up old Flux 2 models (disk savings ~35GB) ──
-echo "[CLEANUP] Removing old Flux 2 models if present..."
+# ── Clean up old models (disk savings ~35GB) ──
+echo "[CLEANUP] Removing old/legacy models if present..."
 rm -f /runpod-volume/models/unet/flux2-dev-Q5_K_M.gguf
 rm -f /runpod-volume/models/text_encoders/mistral_3_small_flux2_fp8.safetensors
 rm -f /runpod-volume/models/vae/flux2-vae.safetensors
@@ -25,12 +25,14 @@ rm -f /runpod-volume/models/text_encoders/t5xxl_fp8.safetensors
 rm -f /runpod-volume/models/vae/flux-ae.safetensors
 rm -f /runpod-volume/models/loras/flux_realism_lora.safetensors
 rm -f /runpod-volume/models/sams/mobile_sam.pt
-# Remove old markers so new models get downloaded
+# Remove old markers so new models get downloaded (FP8 migration)
 rm -f /runpod-volume/models/.download_complete_v1
 rm -f /runpod-volume/models/.download_complete_v2
 rm -f /runpod-volume/models/.download_complete_v3
 rm -f /runpod-volume/models/.download_complete_v4
 rm -f /runpod-volume/models/.download_complete_v5
+rm -f /runpod-volume/models/.download_complete_v6
+rm -f /runpod-volume/models/.download_complete_v7
 echo "[OK] Old model cleanup done"
 
 # ── Hot-update: use code from network volume if present ──

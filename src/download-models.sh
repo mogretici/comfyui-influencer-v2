@@ -6,17 +6,17 @@ set -uo pipefail
 # Subsequent runs skip already-downloaded files
 
 MODELS_DIR="/runpod-volume/models"
-MARKER="$MODELS_DIR/.download_complete_v6"
+MARKER="$MODELS_DIR/.download_complete_v8"
 DOWNLOAD_FAILURES=0
 
 if [ -f "$MARKER" ]; then
-    echo "[OK] Models already downloaded (marker v6 found)"
+    echo "[OK] Models already downloaded (marker v8 found)"
     exit 0
 fi
 
 echo "============================================"
 echo " Downloading models to Network Volume..."
-echo " Flux 1 Dev pipeline (~25GB total)"
+echo " Flux 1 Dev FP8 pipeline (~50GB total)"
 echo "============================================"
 
 download() {
@@ -51,10 +51,10 @@ download() {
     echo "[OK] $name"
 }
 
-# 1. Flux 1 Dev GGUF Q8_0 (~12.7GB) — best quality/VRAM balance for 48GB GPU
-download "$MODELS_DIR/unet/flux1-dev-Q8_0.gguf" \
-    "https://huggingface.co/city96/FLUX.1-dev-gguf/resolve/main/flux1-dev-Q8_0.gguf" \
-    "Flux 1 Dev GGUF Q8_0"
+# 1. Flux 1 Dev FP8 (~17.2GB) — full PuLID/ControlNet compatibility
+download "$MODELS_DIR/diffusion_models/flux1-dev-fp8.safetensors" \
+    "https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/flux1-dev-fp8.safetensors" \
+    "Flux 1 Dev FP8 e4m3fn"
 
 # 2. CLIP-L Text Encoder (~250MB)
 download "$MODELS_DIR/text_encoders/clip_l.safetensors" \
@@ -66,10 +66,10 @@ download "$MODELS_DIR/text_encoders/t5xxl_fp8_e4m3fn.safetensors" \
     "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn.safetensors" \
     "T5-XXL FP8 Text Encoder"
 
-# 4. Flux 1 VAE (~336MB)
+# 4. Flux 1 VAE BF16 (~336MB) — public mirror (BFL repo is gated)
 download "$MODELS_DIR/vae/ae.safetensors" \
-    "https://huggingface.co/black-forest-labs/FLUX.1-dev/resolve/main/ae.safetensors" \
-    "Flux 1 VAE (ae.safetensors)"
+    "https://huggingface.co/Kijai/flux-fp8/resolve/main/flux-vae-bf16.safetensors" \
+    "Flux 1 VAE BF16"
 
 # 5. XLabs IP-Adapter v2 (~1GB)
 download "$MODELS_DIR/xlabs/ipadapters/flux-ip-adapter-v2.safetensors" \
@@ -103,9 +103,9 @@ download "$MODELS_DIR/sams/sam_vit_b_01ec64.pth" \
     "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth" \
     "SAM ViT-B"
 
-# 8. CLIP Vision for IP-Adapter (~1.7GB)
+# 8. CLIP Vision ViT-L for IP-Adapter (~890MB) — OpenAI source (XLabs repo removed file)
 download "$MODELS_DIR/clip_vision/clip_vision_l.safetensors" \
-    "https://huggingface.co/XLabs-AI/flux-ip-adapter/resolve/main/clip_vision_l.safetensors" \
+    "https://huggingface.co/openai/clip-vit-large-patch14/resolve/main/model.safetensors" \
     "CLIP Vision ViT-L (IP-Adapter)"
 
 # 9. 4x-UltraSharp Upscaler (~65MB)
@@ -113,13 +113,23 @@ download "$MODELS_DIR/upscale_models/4x-UltraSharp.pth" \
     "https://huggingface.co/lokCX/4x-Ultrasharp/resolve/main/4x-UltraSharp.pth" \
     "4x-UltraSharp Upscaler"
 
-# 10. XLabs ControlNet OpenPose (~2.8GB)
-download "$MODELS_DIR/xlabs/controlnets/flux-openpose-controlnet.safetensors" \
-    "https://huggingface.co/raulc0399/flux_dev_openpose_controlnet/resolve/main/model.safetensors" \
-    "XLabs ControlNet OpenPose"
+# 10. Shakker-Labs ControlNet Union Pro 2.0 (~3.98GB) — Pose + Depth + Canny in one model
+download "$MODELS_DIR/controlnet/flux-controlnet-union-pro-2.0.safetensors" \
+    "https://huggingface.co/Shakker-Labs/FLUX.1-dev-ControlNet-Union-Pro-2.0/resolve/main/diffusion_pytorch_model.safetensors" \
+    "Shakker-Labs ControlNet Union Pro 2.0"
 
 # 11. DepthAnythingV2 — auto-downloaded by comfyui_controlnet_aux on first use
 # AUX_ANNOTATOR_CKPTS_PATH set in start.sh ensures persistent storage on network volume
+
+# 12. PuLID-Flux v0.9.1 (~1.14GB) — face identity preservation
+download "$MODELS_DIR/pulid/pulid_flux_v0.9.1.safetensors" \
+    "https://huggingface.co/guozinan/PuLID/resolve/main/pulid_flux_v0.9.1.safetensors" \
+    "PuLID-Flux v0.9.1"
+
+# 13. EVA-CLIP for PuLID (~1.7GB)
+download "$MODELS_DIR/clip/EVA02_CLIP_L_336_psz14_s6B.pt" \
+    "https://huggingface.co/QuanSun/EVA-CLIP/resolve/main/EVA02_CLIP_L_336_psz14_s6B.pt" \
+    "EVA-CLIP ViT-L (PuLID)"
 
 # Mark download complete (only if all downloads succeeded)
 if [ $DOWNLOAD_FAILURES -eq 0 ]; then

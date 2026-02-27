@@ -5,9 +5,11 @@ network_volume:
     base_path: /runpod-volume/models
     checkpoints: checkpoints
     unet: unet
+    diffusion_models: diffusion_models
     clip: text_encoders
     vae: vae
     loras: loras
+    controlnet: controlnet
     upscale_models: upscale_models
     sams: sams
     ultralytics: ultralytics
@@ -23,3 +25,7 @@ xlabs:
 insightface:
     base_path: /runpod-volume/models/insightface
     models: models
+
+pulid:
+    base_path: /runpod-volume/models
+    pulid: pulid

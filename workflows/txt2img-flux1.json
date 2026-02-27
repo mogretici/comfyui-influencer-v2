@@ -1,10 +1,11 @@
 {
   "1": {
-    "class_type": "UnetLoaderGGUF",
+    "class_type": "UNETLoader",
     "inputs": {
-      "unet_name": "flux1-dev-Q8_0.gguf"
+      "unet_name": "flux1-dev-fp8.safetensors",
+      "weight_dtype": "fp8_e4m3fn"
     },
-    "_meta": { "title": "UNet Loader GGUF" }
+    "_meta": { "title": "UNet Loader (FP8)" }
   },
   "2": {
     "class_type": "DualCLIPLoader",

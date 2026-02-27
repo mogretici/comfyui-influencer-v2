@@ -1,7 +1,8 @@
 # ============================================================
-# ComfyUI + Flux 1 Dev — AI Influencer Pipeline v5 (Optical Realism)
+# ComfyUI + Flux 1 Dev FP8 — AI Influencer Pipeline v6 (AAA Quality)
 # Target: RunPod Serverless (L40S/A40 48GB)
 # Image Size: ~5-8 GB (models on Network Volume)
+# Features: PuLID + ControlNet Union Pro + Detail Daemon + OpticalRealism
 # ============================================================
 
 # Stage 1: Base
@@ -85,6 +86,15 @@ RUN cd /comfyui/custom_nodes && \
 # 5.8 Post-processing — FilmGrain, ColorCorrect, ChromaticAberration, Vignette
 RUN cd /comfyui/custom_nodes && \
     git clone --depth 1 https://github.com/EllangoK/ComfyUI-post-processing-nodes.git
+
+# 5.9 Detail Daemon — micro-detail during sampling (skin pores, hair strands, fabric texture)
+RUN cd /comfyui/custom_nodes && \
+    git clone --depth 1 https://github.com/Jonseed/ComfyUI-Detail-Daemon.git
+
+# 5.10 PuLID-Flux — face identity preservation (~87-91% similarity)
+RUN cd /comfyui/custom_nodes && \
+    git clone --depth 1 https://github.com/lldacing/ComfyUI_PuLID_Flux_ll.git && \
+    cd ComfyUI_PuLID_Flux_ll && pip install --no-cache-dir -r requirements.txt
 
 # Models are downloaded at runtime to Network Volume — not baked into image
 # See src/download-models.sh for the model download logic
