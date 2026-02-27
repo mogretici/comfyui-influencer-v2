@@ -488,10 +488,10 @@ def build_generate_workflow(params: dict) -> dict:
     # Core prompt
     prompt = params.get("prompt",
         "Close-up portrait photograph of a 25-year-old woman with natural olive skin, "
-        "subtle smile, hazel eyes. Shot on Canon EOS R5, 85mm f/1.4 lens, natural window light, "
+        "subtle smile, hazel eyes. Shot on Canon EOS R5, 85mm f/1.4 lens, natural diffused light, "
         "shallow depth of field. Visible skin pores and subtle freckles. "
         "No makeup or minimal makeup, hair slightly messy. "
-        "Warm golden hour tones, bokeh background."
+        "Neutral color grading, soft bokeh background."
     )
 
     # Model parameters
