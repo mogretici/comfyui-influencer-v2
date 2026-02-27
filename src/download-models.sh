@@ -6,7 +6,7 @@ set -uo pipefail
 # Subsequent runs skip already-downloaded files
 
 MODELS_DIR="/runpod-volume/models"
-MARKER="$MODELS_DIR/.download_complete_v8"
+MARKER="$MODELS_DIR/.download_complete_v9"
 DOWNLOAD_FAILURES=0
 
 if [ -f "$MARKER" ]; then
@@ -126,8 +126,8 @@ download "$MODELS_DIR/pulid/pulid_flux_v0.9.1.safetensors" \
     "https://huggingface.co/guozinan/PuLID/resolve/main/pulid_flux_v0.9.1.safetensors" \
     "PuLID-Flux v0.9.1"
 
-# 13. EVA-CLIP for PuLID (~1.7GB)
-download "$MODELS_DIR/clip/EVA02_CLIP_L_336_psz14_s6B.pt" \
+# 13. EVA-CLIP for PuLID (~1.7GB) — in text_encoders (ComfyUI maps "clip" → text_encoders)
+download "$MODELS_DIR/text_encoders/EVA02_CLIP_L_336_psz14_s6B.pt" \
     "https://huggingface.co/QuanSun/EVA-CLIP/resolve/main/EVA02_CLIP_L_336_psz14_s6B.pt" \
     "EVA-CLIP ViT-L (PuLID)"
 

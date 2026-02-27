@@ -41,7 +41,8 @@ RUN pip install --no-cache-dir \
     timm facexlib ftfy \
     opencv-python-headless \
     Pillow \
-    runpod requests websocket-client
+    runpod requests websocket-client \
+    && pip install --no-cache-dir --no-deps facenet-pytorch
 
 # Stage 5: Custom Nodes
 # 5.1 GGUF — Flux 2 Dev GGUF loading (required)

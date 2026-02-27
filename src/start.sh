@@ -33,6 +33,7 @@ rm -f /runpod-volume/models/.download_complete_v4
 rm -f /runpod-volume/models/.download_complete_v5
 rm -f /runpod-volume/models/.download_complete_v6
 rm -f /runpod-volume/models/.download_complete_v7
+rm -f /runpod-volume/models/.download_complete_v8
 echo "[OK] Old model cleanup done"
 
 # ── Hot-update: use code from network volume if present ──
